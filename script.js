@@ -1,167 +1,133 @@
-// ハンバーガーメニューのトグル
-const hamburger = document.querySelector('.hamburger');
-const navMenu = document.querySelector('.nav-menu');
+class ProjectGallery {
+    constructor() {
+        this.slides = Array.from(document.querySelectorAll('.gallery-slide'));
+        this.dots = Array.from(document.querySelectorAll('.dot'));
+        this.prevBtn = document.querySelector('.nav-prev');
+        this.nextBtn = document.querySelector('.nav-next');
+        this.counterEl = document.querySelector('.current-project');
+        this.container = document.querySelector('.gallery-container');
 
-hamburger.addEventListener('click', () => {
-    navMenu.classList.toggle('active');
-});
+        this.currentIndex = 0;
+        this.isTransitioning = false;
+        this.touchStartX = 0;
+        this.touchEndX = 0;
 
-// ナビゲーションリンククリック時にメニューを閉じる
-document.querySelectorAll('.nav-menu a').forEach(link => {
-    link.addEventListener('click', () => {
-        navMenu.classList.remove('active');
-    });
-});
-
-// スクロール時のナビゲーションバーのスタイル変更
-let lastScroll = 0;
-window.addEventListener('scroll', () => {
-    const navbar = document.querySelector('.navbar');
-    const currentScroll = window.scrollY;
-    
-    if (currentScroll > 50) {
-        navbar.classList.add('scrolled');
-    } else {
-        navbar.classList.remove('scrolled');
+        this.bindEvents();
+        this.updateUI();
     }
-    
-    lastScroll = currentScroll;
-});
 
-// ナビゲーションのアクティブ状態をスクロール位置に応じて更新
-function updateActiveNav() {
-    const sections = document.querySelectorAll('section[id]');
-    const navLinks = document.querySelectorAll('.nav-menu a');
-    
-    let current = '';
-    const scrollPosition = window.scrollY + 150;
-    
-    sections.forEach(section => {
-        const sectionTop = section.offsetTop;
-        const sectionHeight = section.offsetHeight;
-        
-        if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
-            current = section.getAttribute('id');
+    bindEvents() {
+        if (this.prevBtn) {
+            this.prevBtn.addEventListener('click', () => this.gotoPrev());
         }
-    });
-    
-    navLinks.forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('href') === `#${current}`) {
-            link.classList.add('active');
+        if (this.nextBtn) {
+            this.nextBtn.addEventListener('click', () => this.gotoNext());
         }
-    });
-}
 
-window.addEventListener('scroll', updateActiveNav);
-window.addEventListener('load', updateActiveNav);
-
-// フォーム送信処理とアニメーション
-const contactForm = document.querySelector('.contact-form');
-if (contactForm) {
-    // フォームフィールドのフォーカスアニメーション
-    const formInputs = contactForm.querySelectorAll('input, textarea');
-    formInputs.forEach(input => {
-        input.addEventListener('focus', function() {
-            this.parentElement.classList.add('focused');
+        this.dots.forEach((dot, index) => {
+            dot.addEventListener('click', () => this.goTo(index));
         });
-        
-        input.addEventListener('blur', function() {
-            if (!this.value) {
-                this.parentElement.classList.remove('focused');
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowLeft') this.gotoPrev();
+            if (event.key === 'ArrowRight') this.gotoNext();
+        });
+
+        if (this.container) {
+            this.container.addEventListener('touchstart', (event) => {
+                this.touchStartX = event.touches[0].clientX;
+            }, { passive: true });
+
+            this.container.addEventListener('touchend', (event) => {
+                this.touchEndX = event.changedTouches[0].clientX;
+                this.handleSwipe();
+            }, { passive: true });
+
+            let wheelTimeout;
+            this.container.addEventListener('wheel', (event) => {
+                event.preventDefault();
+                clearTimeout(wheelTimeout);
+                wheelTimeout = setTimeout(() => {
+                    if (event.deltaY > 0) {
+                        this.gotoNext();
+                    } else {
+                        this.gotoPrev();
+                    }
+                }, 80);
+            }, { passive: false });
+        }
+    }
+
+    gotoPrev() {
+        if (this.isTransitioning) return;
+        const nextIndex = (this.currentIndex - 1 + this.slides.length) % this.slides.length;
+        this.transitionTo(nextIndex, 'prev');
+    }
+
+    gotoNext() {
+        if (this.isTransitioning) return;
+        const nextIndex = (this.currentIndex + 1) % this.slides.length;
+        this.transitionTo(nextIndex, 'next');
+    }
+
+    goTo(index) {
+        if (this.isTransitioning || index === this.currentIndex) return;
+        const direction = index > this.currentIndex ? 'next' : 'prev';
+        this.transitionTo(index, direction);
+    }
+
+    transitionTo(targetIndex, direction) {
+        this.isTransitioning = true;
+
+        this.slides.forEach((slide, index) => {
+            slide.classList.remove('slide-out-left', 'slide-out-right', 'slide-in-left', 'slide-in-right', 'active');
+
+            if (index === this.currentIndex) {
+                slide.classList.add(direction === 'next' ? 'slide-out-left' : 'slide-out-right');
+            }
+
+            if (index === targetIndex) {
+                slide.classList.add('active', direction === 'next' ? 'slide-in-right' : 'slide-in-left');
             }
         });
-        
-        // ページ読み込み時に値がある場合
-        if (input.value) {
-            input.parentElement.classList.add('focused');
-        }
-    });
-    
-    contactForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        
-        // 送信ボタンのアニメーション
-        const submitBtn = contactForm.querySelector('button[type="submit"]');
-        submitBtn.style.transform = 'scale(0.95)';
+
+        this.currentIndex = targetIndex;
+        this.updateUI();
+
         setTimeout(() => {
-            submitBtn.style.transform = '';
-            alert('お問い合わせありがとうございます！メール機能を実装する場合は、バックエンドの設定が必要です。');
-            contactForm.reset();
-            formInputs.forEach(input => {
-                input.parentElement.classList.remove('focused');
+            this.slides.forEach(slide => {
+                slide.classList.remove('slide-out-left', 'slide-out-right', 'slide-in-left', 'slide-in-right');
             });
-        }, 200);
-    });
+            this.isTransitioning = false;
+        }, 600);
+    }
+
+    updateUI() {
+        this.dots.forEach((dot, index) => {
+            dot.classList.toggle('active', index === this.currentIndex);
+        });
+
+        if (this.counterEl) {
+            this.counterEl.textContent = String(this.currentIndex + 1).padStart(2, '0');
+        }
+    }
+
+    handleSwipe() {
+        const threshold = 50;
+        const distance = this.touchStartX - this.touchEndX;
+
+        if (Math.abs(distance) < threshold) return;
+        if (distance > 0) {
+            this.gotoNext();
+        } else {
+            this.gotoPrev();
+        }
+    }
 }
 
-// スムーススクロール（フォールバック）
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
-        }
-    });
-});
-
-// スクロール時のフェードインアニメーション（改善版）
-const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -100px 0px'
-};
-
-const fadeObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry, index) => {
-        if (entry.isIntersecting) {
-            setTimeout(() => {
-                entry.target.classList.add('visible');
-            }, index * 100);
-            fadeObserver.unobserve(entry.target);
-        }
-    });
-}, observerOptions);
-
-// アニメーション対象の要素を監視
 document.addEventListener('DOMContentLoaded', () => {
-    // スキルカード
-    document.querySelectorAll('.skill-card').forEach((el, index) => {
-        el.classList.add('fade-in-up');
-        fadeObserver.observe(el);
-    });
-    
-    // プロジェクトカード
-    document.querySelectorAll('.project-card').forEach((el, index) => {
-        el.classList.add('fade-in-up');
-        fadeObserver.observe(el);
-    });
-    
-    // Aboutセクションのコンテンツ
-    const aboutImage = document.querySelector('.about-image');
-    const aboutText = document.querySelector('.about-text');
-    if (aboutImage) {
-        aboutImage.classList.add('slide-in-left');
-        fadeObserver.observe(aboutImage);
+    if (document.querySelector('.gallery-slide')) {
+        new ProjectGallery();
     }
-    if (aboutText) {
-        aboutText.classList.add('slide-in-right');
-        fadeObserver.observe(aboutText);
-    }
-    
-    // セクションタイトル
-    document.querySelectorAll('.section-title').forEach(el => {
-        el.classList.add('fade-in-up');
-        fadeObserver.observe(el);
-    });
-    
-    // コンタクト情報
-    document.querySelectorAll('.contact-item').forEach((el, index) => {
-        el.classList.add('fade-in-up');
-        fadeObserver.observe(el);
-    });
 });
 
