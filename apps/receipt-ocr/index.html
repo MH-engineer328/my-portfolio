@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Receipt - レシート自動家計簿</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Tesseract.js -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="app-header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/index.html" class="back-button" id="backLink">← ポートフォリオに戻る</a>
+                <h1 class="app-title">Smart Receipt</h1>
+                <button class="settings-button" id="settingsBtn" aria-label="設定">⚙️</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="app-main">
+        <!-- ダッシュボード画面 -->
+        <section id="dashboard" class="screen active">
+            <div class="container">
+                <!-- サマリー -->
+                <div class="summary-card">
+                    <h2>今月の支出</h2>
+                    <p class="summary-amount" id="monthlyTotal">¥0</p>
+                </div>
+
+                <!-- 週間グラフ -->
+                <div class="chart-card">
+                    <h3>週間支出</h3>
+                    <canvas id="weeklyChart"></canvas>
+                </div>
+
+                <!-- カレンダー -->
+                <div class="calendar-card">
+                    <div class="calendar-header">
+                        <button class="calendar-nav" id="prevMonth">←</button>
+                        <h3 id="calendarMonth">2024年1月</h3>
+                        <button class="calendar-nav" id="nextMonth">→</button>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
+                </div>
+
+                <!-- 最近のレシートリスト -->
+                <div class="receipts-list">
+                    <h3>最近のレシート</h3>
+                    <div id="receiptsContainer" class="receipts-container">
+                        <!-- 動的に生成 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- エディタ画面（撮影・編集） -->
+        <section id="editor" class="screen">
+            <div class="container">
+                <div class="editor-content">
+                    <!-- 画像プレビュー -->
+                    <div class="image-preview-section">
+                        <div class="image-preview" id="imagePreview">
+                            <p class="placeholder-text">レシート画像をアップロード</p>
+                        </div>
+                        <input type="file" id="imageInput" accept="image/*" capture="environment" style="display: none;">
+                        <button class="btn btn-primary" id="captureBtn">📷 カメラで撮影</button>
+                    </div>
+
+                    <!-- OCR処理中インジケーター -->
+                    <div class="ocr-loading" id="ocrLoading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>レシートを読み取っています...</p>
+                    </div>
+
+                    <!-- フォーム -->
+                    <form class="receipt-form" id="receiptForm">
+                        <!-- 日付 -->
+                        <div class="form-group">
+                            <label for="receiptDate">日付</label>
+                            <input type="date" id="receiptDate" name="date" required>
+                            <div class="field-status" id="dateStatus"></div>
+                            <div class="error-message" id="dateError"></div>
+                        </div>
+
+                        <!-- 店舗名 -->
+                        <div class="form-group">
+                            <label for="merchantName">店舗名</label>
+                            <input type="text" id="merchantName" name="merchant" required>
+                            <div class="field-status" id="merchantStatus"></div>
+                            <div class="error-message" id="merchantError"></div>
+                        </div>
+
+                        <!-- 合計金額 -->
+                        <div class="form-group">
+                            <label for="totalAmount">合計金額</label>
+                            <input type="number" id="totalAmount" name="amount" min="0" step="1" required>
+                            <div class="field-status" id="amountStatus"></div>
+                            <div class="error-message" id="amountError"></div>
+                        </div>
+
+                        <!-- カテゴリ -->
+                        <div class="form-group">
+                            <label for="category">カテゴリ</label>
+                            <select id="category" name="category" required>
+                                <option value="food">食費</option>
+                                <option value="daily">日用品</option>
+                                <option value="restaurant">外食</option>
+                                <option value="cafe">カフェ</option>
+                                <option value="transport">交通費</option>
+                                <option value="other">その他</option>
+                            </select>
+                        </div>
+
+                        <!-- メモ -->
+                        <div class="form-group">
+                            <label for="memo">メモ</label>
+                            <textarea id="memo" name="memo" rows="3"></textarea>
+                        </div>
+
+                        <!-- アクションボタン -->
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancelBtn">キャンセル</button>
+                            <button type="button" class="btn btn-secondary" id="retakeBtn">再撮影</button>
+                            <button type="submit" class="btn btn-primary">保存</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- FAB (Floating Action Button) -->
+    <button class="fab" id="fabBtn" aria-label="レシートを追加">
+        <span>+</span>
+    </button>
+
+    <!-- スクリプト -->
+    <script src="js/storage.js"></script>
+    <script src="js/parser.js"></script>
+    <script src="js/category-classifier.js"></script>
+    <script src="js/ocr-service.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
+
