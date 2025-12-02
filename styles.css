@@ -14,13 +14,13 @@
     --primary-green-lighter: #059669;
     --accent-green: #10b981;
     --accent-green-light: #34d399;
-    
+
     /* テキストカラー */
     --text-color: #ffffff;
     --text-secondary: rgba(255, 255, 255, 0.9);
     --text-light: rgba(255, 255, 255, 0.7);
     --text-muted: rgba(255, 255, 255, 0.5);
-    
+
     /* トランジション */
     --transition-fast: 0.2s ease;
     --transition-base: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -165,6 +165,14 @@ body {
     overflow: hidden;
 }
 
+/* 縦並びレイアウト用のプロジェクトカード */
+.project-card-vertical {
+    display: flex;
+    flex-direction: column;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
 .project-card::before {
     content: '';
     position: absolute;
@@ -193,6 +201,15 @@ body {
     justify-content: center;
     align-items: center;
     padding: 1rem;
+}
+
+.project-visual-img {
+    width: 100%;
+    height: auto;
+    max-height: 500px;
+    object-fit: cover;
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 }
 
 .phone-frame {
@@ -267,6 +284,13 @@ body {
     text-align: left;
 }
 
+/* 縦並びレイアウト用のproject-details */
+.project-card-vertical .project-details {
+    text-align: center;
+    align-items: center;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+}
+
 .project-eyebrow {
     font-family: 'Space Grotesk', 'Inter', 'Noto Sans JP', sans-serif;
     font-size: 0.95rem;
@@ -317,7 +341,7 @@ body {
 }
 
 .text-highlight {
-    color: #bbf7d0;
+    color: #86efac;
     font-weight: 600;
 }
 
@@ -363,6 +387,127 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.4);
     transition: all var(--transition-base);
     align-self: flex-start;
+}
+
+/* 縦並びレイアウト用のproject-link */
+.project-card-vertical .project-link {
+    align-self: center;
+    margin-top: 1rem;
+}
+
+/* プロセスフロー */
+.process-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(1rem, 2vw, 2rem);
+    margin: clamp(1.5rem, 3vw, 2.5rem) 0;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    min-width: min-content;
+}
+
+
+.process-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.process-icon {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    transition: all var(--transition-base);
+}
+
+.process-icon:hover {
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.process-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.process-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.8);
+    font-family: 'Space Grotesk', 'Inter', 'Noto Sans JP', sans-serif;
+}
+
+.process-arrow {
+    font-size: 1.5rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 300;
+    margin: 0 0.5rem;
+    transition: transform 0.3s ease, color 0.3s ease;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+/* プロセスアイコンホバー時の矢印アニメーション */
+/* 1つ目のアイコン（レシート）をホバーしたとき、その直後の矢印を動かす */
+.process-step:nth-child(1):hover + .process-arrow {
+    transform: translateX(8px);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* 2つ目のアイコン（自動処理）をホバーしたとき、その直後の矢印を動かす */
+.process-step:nth-child(3):hover + .process-arrow {
+    transform: translateX(8px);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* プロセスアイコン（イラスト） */
+.process-icons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+    margin: clamp(1.5rem, 3vw, 2.5rem) 0;
+    flex-wrap: wrap;
+}
+
+.process-icon-large {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 16px;
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    transition: all var(--transition-base);
+}
+
+.process-icon-large:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-3px) scale(1.05);
+}
+
+.process-icon-large svg {
+    width: 40px;
+    height: 40px;
 }
 
 .project-link .arrow {
@@ -539,6 +684,39 @@ body {
         width: 100%;
         justify-content: center;
     }
+
+    /* 縦並びレイアウトのレスポンシブ対応 */
+    .project-card-vertical {
+        padding: 2rem;
+    }
+
+    .process-flow {
+        gap: 1rem;
+    }
+
+    .process-icon {
+        width: 45px;
+        height: 45px;
+    }
+
+    .process-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .process-icons {
+        gap: 1rem;
+    }
+
+    .process-icon-large {
+        width: 70px;
+        height: 70px;
+    }
+
+    .process-icon-large svg {
+        width: 35px;
+        height: 35px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -568,6 +746,47 @@ body {
     .project-link {
         font-size: 0.95rem;
         padding: 0.9rem 1.5rem;
+    }
+
+    /* 縦並びレイアウトのレスポンシブ対応（小画面） */
+    .project-card-vertical {
+        padding: 1.5rem;
+    }
+
+    .process-flow {
+        gap: 0.75rem;
+    }
+
+    .process-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .process-icon svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .process-label {
+        font-size: 0.65rem;
+    }
+
+    .process-arrow {
+        font-size: 1.25rem;
+    }
+
+    .process-icons {
+        gap: 0.75rem;
+    }
+
+    .process-icon-large {
+        width: 60px;
+        height: 60px;
+    }
+
+    .process-icon-large svg {
+        width: 30px;
+        height: 30px;
     }
 
     .nav-arrow {
