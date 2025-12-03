@@ -429,4 +429,3 @@ ReceiptApp.prototype.addCategory = function() {
     this.renderCategoriesList();
     this.renderKeywordsList();
 };
-
