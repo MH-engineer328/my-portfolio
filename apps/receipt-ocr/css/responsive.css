@@ -1,0 +1,60 @@
+/* レスポンシブ */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 16px;
+    }
+
+    .calendar-grid {
+        gap: 0.25rem;
+    }
+
+    .calendar-day {
+        padding: 0.25rem;
+        font-size: 0.875rem;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions .btn {
+        width: 100%;
+    }
+
+    .fab {
+        bottom: 1rem;
+        right: 1rem;
+    }
+
+    .modal-content {
+        width: 95%;
+        max-height: 95vh;
+    }
+
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: 1rem;
+    }
+
+    .category-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .category-info {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .keyword-input-group {
+        flex-direction: column;
+    }
+
+    .keyword-input-group .btn {
+        width: 100%;
+    }
+}
+

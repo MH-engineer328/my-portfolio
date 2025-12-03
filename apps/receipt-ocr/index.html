@@ -4,7 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Receipt - レシート自動家計簿</title>
-    <link rel="stylesheet" href="styles.css">
+    <!-- CSSファイル（機能別に分割） -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/header.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/calendar.css">
+    <link rel="stylesheet" href="css/receipt-list.css">
+    <link rel="stylesheet" href="css/editor.css">
+    <link rel="stylesheet" href="css/form.css">
+    <link rel="stylesheet" href="css/loading.css">
+    <link rel="stylesheet" href="css/buttons.css">
+    <link rel="stylesheet" href="css/modal.css">
+    <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/responsive.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -142,6 +154,52 @@
     <button class="fab" id="fabBtn" aria-label="レシートを追加">
         <span>+</span>
     </button>
+
+    <!-- 設定モーダル -->
+    <div id="settingsModal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>設定</h2>
+                <button class="modal-close" id="closeSettingsBtn" aria-label="閉じる">×</button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- 週間予算セクション -->
+                <section class="settings-section">
+                    <h3>週間予算</h3>
+                    <div class="form-group">
+                        <label for="weeklyBudgetInput">週間予算（円）</label>
+                        <input type="number" id="weeklyBudgetInput" min="0" step="100" />
+                        <p class="form-hint">週間の支出予算を設定します。グラフの予算ラインに反映されます。</p>
+                    </div>
+                </section>
+
+                <!-- カテゴリ管理セクション -->
+                <section class="settings-section">
+                    <h3>カテゴリ管理</h3>
+                    <div id="categoriesList" class="categories-list">
+                        <!-- 動的に生成 -->
+                    </div>
+                    <button class="btn btn-secondary" id="addCategoryBtn">+ カテゴリを追加</button>
+                </section>
+
+                <!-- キーワード設定セクション -->
+                <section class="settings-section">
+                    <h3>キーワード設定</h3>
+                    <p class="form-hint">店舗名に含まれるキーワードで自動的にカテゴリを分類します。</p>
+                    <div id="keywordsList" class="keywords-list">
+                        <!-- 動的に生成 -->
+                    </div>
+                </section>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelSettingsBtn">キャンセル</button>
+                <button class="btn btn-primary" id="saveSettingsBtn">保存</button>
+            </div>
+        </div>
+    </div>
 
     <!-- スクリプト -->
     <script src="js/storage.js"></script>
