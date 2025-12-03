@@ -30,4 +30,6 @@ yarn-error.log*
 # dist/
 # build/
 
+# Markdownファイル
+*.md
 
