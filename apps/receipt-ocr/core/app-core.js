@@ -20,6 +20,7 @@ class ReceiptApp {
         // DOM要素の取得
         this.elements = {
             dashboard: document.getElementById('dashboard'),
+            calendarScreen: document.getElementById('calendarScreen'),
             editor: document.getElementById('editor'),
             fabBtn: document.getElementById('fabBtn'),
             imageInput: document.getElementById('imageInput'),
@@ -153,8 +154,6 @@ class ReceiptApp {
             settingsBtn.addEventListener('click', () => {
                 this.showSettingsModal();
             });
-        } else {
-            console.warn('設定ボタンが見つかりません');
         }
     }
 
@@ -168,6 +167,9 @@ class ReceiptApp {
         }
         this.elements.dashboard.classList.add('active');
         this.elements.editor.classList.remove('active');
+        if (this.elements.calendarScreen) {
+            this.elements.calendarScreen.classList.remove('active');
+        }
         this.updateDashboard();
     }
 
@@ -181,7 +183,24 @@ class ReceiptApp {
         }
         this.elements.dashboard.classList.remove('active');
         this.elements.editor.classList.add('active');
+        if (this.elements.calendarScreen) {
+            this.elements.calendarScreen.classList.remove('active');
+        }
         this.resetForm();
+    }
+
+    /**
+     * カレンダーを表示
+     */
+    showCalendar() {
+        if (!this.elements.calendarScreen || !this.elements.dashboard || !this.elements.editor) {
+            console.error('Calendar, Dashboard or Editor element not found');
+            return;
+        }
+        this.elements.dashboard.classList.remove('active');
+        this.elements.editor.classList.remove('active');
+        this.elements.calendarScreen.classList.add('active');
+        this.renderCalendar();
     }
 
     /**

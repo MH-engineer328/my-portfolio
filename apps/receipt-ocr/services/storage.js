@@ -164,6 +164,63 @@ class ReceiptStorage {
             return v.toString(16);
         });
     }
+
+    /**
+     * 未分類・手動修正済み店舗のサジェスト候補を取得
+     * フィルタ: category.id === 'other' かつ category.autoDetected === false
+     * サニタイズ: 3文字未満、数字のみ・記号のみを除外（全角/半角をNFKCで正規化）
+     * ソート: 出現頻度降順 → createdAt 降順
+     * @param {number} limit - 返却する件数上限
+     * @returns {Array<{ name: string, count: number, latestAt: string }>}
+     */
+    getRecentProblemMerchants(limit = 8) {
+        const receipts = this.getAllReceipts();
+
+        // 正規化・除外判定
+        const normalizeName = (name) => {
+            if (!name || typeof name !== 'string') return null;
+            const normalized = name.normalize('NFKC').replace(/\s+/g, ' ').trim();
+            if (normalized.length < 3) return null;
+
+            const compact = normalized.replace(/\s+/g, '');
+            // 数字のみ（全角数字含む）
+            if (/^[\d０-９]+$/.test(compact)) return null;
+            // 記号のみ（Unicodeの記号/句読点カテゴリ）
+            if (/^[\p{P}\p{S}]+$/u.test(compact)) return null;
+            return normalized;
+        };
+
+        const map = new Map();
+
+        receipts.forEach((r) => {
+            const category = r.category || {};
+            if (category.id !== 'other' || category.autoDetected !== false) return;
+
+            const candidate = normalizeName(r?.merchant?.name || r?.merchant?.raw || '');
+            if (!candidate) return;
+
+            const key = candidate.toLowerCase();
+            const createdAt = r.createdAt || r.date || '';
+
+            if (!map.has(key)) {
+                map.set(key, { name: candidate, count: 1, latestAt: createdAt });
+            } else {
+                const current = map.get(key);
+                current.count += 1;
+                // createdAt が新しい方を保持
+                if (!current.latestAt || new Date(createdAt) > new Date(current.latestAt)) {
+                    current.latestAt = createdAt;
+                }
+            }
+        });
+
+        const sorted = Array.from(map.values()).sort((a, b) => {
+            if (b.count !== a.count) return b.count - a.count;
+            return new Date(b.latestAt || 0) - new Date(a.latestAt || 0);
+        });
+
+        return sorted.slice(0, limit);
+    }
 }
 
 // グローバルにエクスポート

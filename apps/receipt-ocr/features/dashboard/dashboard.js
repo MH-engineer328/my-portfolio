@@ -177,8 +177,9 @@ ReceiptApp.prototype.renderCalendar = function() {
     for (let day = 1; day <= daysInMonth; day++) {
         const dayEl = this.createCalendarDay(day, false, dailyTotals[day]);
         dayEl.addEventListener('click', () => {
-            // 日付クリック時の処理（将来的に実装）
-            console.log(`Clicked: ${year}-${month + 1}-${day}`);
+            // 日付をYYYY-MM-DD形式に変換
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            this.showDateReceiptsModal(dateStr);
         });
         this.elements.calendarGrid.appendChild(dayEl);
     }
@@ -231,18 +232,138 @@ ReceiptApp.prototype.renderRecentReceipts = function() {
     }
 
     recent.forEach(receipt => {
-        const card = document.createElement('div');
-        card.className = 'receipt-card';
-
-        card.innerHTML = `
-            <div class="receipt-info">
-                <div class="receipt-merchant">${receipt.merchant.name || '不明'}</div>
-                <div class="receipt-date">${new Date(receipt.date).toLocaleDateString('ja-JP')}</div>
-            </div>
-            <div class="receipt-amount">¥${(receipt.totalAmount || 0).toLocaleString()}</div>
-        `;
-
+        const card = this.createReceiptCard(receipt);
         this.elements.receiptsContainer.appendChild(card);
     });
+};
+
+/**
+ * レシートカードを作成
+ */
+ReceiptApp.prototype.createReceiptCard = function(receipt) {
+    const card = document.createElement('div');
+    card.className = 'receipt-card';
+    card.dataset.receiptId = receipt.id;
+
+    const settings = this.storage.getSettings();
+    const category = settings.categories.find(c => c.id === receipt.category?.id) || settings.categories.find(c => c.id === 'other');
+    const categoryColor = category?.color || '#6b7280';
+
+    card.innerHTML = `
+        <div class="receipt-info">
+            <div class="receipt-merchant">${receipt.merchant.name || '不明'}</div>
+            <div class="receipt-date">${new Date(receipt.date).toLocaleDateString('ja-JP')}</div>
+            ${receipt.category ? `<div class="receipt-category" style="color: ${categoryColor};">${receipt.category.name || ''}</div>` : ''}
+        </div>
+        <div class="receipt-amount">¥${(receipt.totalAmount || 0).toLocaleString()}</div>
+    `;
+
+    // カードクリック時の処理（将来的に詳細表示・編集機能を追加可能）
+    card.addEventListener('click', () => {
+        console.log('Receipt clicked:', receipt.id);
+        // 将来的に詳細表示・編集機能を実装
+    });
+
+    return card;
+};
+
+/**
+ * 日付別レシート一覧モーダルを表示
+ */
+ReceiptApp.prototype.showDateReceiptsModal = function(dateStr) {
+    const modal = document.getElementById('dateReceiptsModal');
+    const title = document.getElementById('dateReceiptsModalTitle');
+    const container = document.getElementById('dateReceiptsContainer');
+
+    if (!modal || !title || !container) {
+        console.error('Date receipts modal elements not found');
+        return;
+    }
+
+    // タイトルを設定
+    const date = new Date(dateStr);
+    title.textContent = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日のレシート`;
+
+    // その日のレシートを取得
+    const receipts = this.storage.getReceiptsByDate(dateStr);
+    
+    // レシートを表示
+    container.innerHTML = '';
+
+    if (receipts.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 2rem;">この日のレシートはありません</p>';
+    } else {
+        // 合計金額を計算
+        const totalAmount = receipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+        
+        // 合計表示
+        const totalEl = document.createElement('div');
+        totalEl.className = 'date-receipts-total';
+        totalEl.innerHTML = `
+            <div class="date-receipts-total-label">合計</div>
+            <div class="date-receipts-total-amount">¥${totalAmount.toLocaleString()}</div>
+        `;
+        container.appendChild(totalEl);
+
+        // レシートカードを表示
+        receipts.forEach(receipt => {
+            const card = this.createReceiptCard(receipt);
+            container.appendChild(card);
+        });
+    }
+
+    // モーダルを表示
+    modal.style.display = 'flex';
+
+    // イベントリスナーは初回のみ登録（重複防止）
+    if (!this.dateReceiptsModalInitialized) {
+        // 閉じるボタンのイベントリスナー
+        const closeBtn = document.getElementById('closeDateReceiptsBtn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.hideDateReceiptsModal();
+            });
+        }
+
+        // 背景クリックで閉じる
+        const overlay = modal.querySelector('.modal-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    this.hideDateReceiptsModal();
+                }
+            });
+        }
+
+        this.dateReceiptsModalInitialized = true;
+    }
+
+    // ESCキーで閉じる（モーダルが表示されている間のみ有効）
+    const escHandler = (e) => {
+        if (e.key === 'Escape' && modal.style.display === 'flex') {
+            this.hideDateReceiptsModal();
+        }
+    };
+    // 既存のESCハンドラを削除してから追加
+    if (this.dateReceiptsModalEscHandler) {
+        document.removeEventListener('keydown', this.dateReceiptsModalEscHandler);
+    }
+    this.dateReceiptsModalEscHandler = escHandler;
+    document.addEventListener('keydown', escHandler);
+};
+
+/**
+ * 日付別レシート一覧モーダルを非表示
+ */
+ReceiptApp.prototype.hideDateReceiptsModal = function() {
+    const modal = document.getElementById('dateReceiptsModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    // ESCキーのイベントリスナーを削除
+    if (this.dateReceiptsModalEscHandler) {
+        document.removeEventListener('keydown', this.dateReceiptsModalEscHandler);
+        this.dateReceiptsModalEscHandler = null;
+    }
 };
 

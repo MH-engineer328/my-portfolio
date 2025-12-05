@@ -32,7 +32,6 @@
             <div class="header-content">
                 <a href="/index.html" class="back-button" id="backLink">← ポートフォリオに戻る</a>
                 <h1 class="app-title">Smart Receipt</h1>
-                <button class="settings-button" id="settingsBtn" aria-label="設定">⚙️</button>
             </div>
         </div>
     </header>
@@ -54,22 +53,26 @@
                     <canvas id="weeklyChart"></canvas>
                 </div>
 
-                <!-- カレンダー -->
-                <div class="calendar-card">
+                <!-- 最近のレシートリスト -->
+                <div class="receipts-list" id="recentSection">
+                    <h3>最近のレシート</h3>
+                    <div id="receiptsContainer" class="receipts-container">
+                        <!-- 動的に生成 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- カレンダー画面 -->
+        <section id="calendarScreen" class="screen">
+            <div class="container">
+                <div class="calendar-card" id="calendarSection">
                     <div class="calendar-header">
                         <button class="calendar-nav" id="prevMonth">←</button>
                         <h3 id="calendarMonth">2024年1月</h3>
                         <button class="calendar-nav" id="nextMonth">→</button>
                     </div>
                     <div class="calendar-grid" id="calendarGrid"></div>
-                </div>
-
-                <!-- 最近のレシートリスト -->
-                <div class="receipts-list">
-                    <h3>最近のレシート</h3>
-                    <div id="receiptsContainer" class="receipts-container">
-                        <!-- 動的に生成 -->
-                    </div>
                 </div>
             </div>
         </section>
@@ -151,9 +154,41 @@
     </main>
 
     <!-- FAB (Floating Action Button) -->
-    <button class="fab" id="fabBtn" aria-label="レシートを追加">
+    <button class="fab bottom-nav-safe" id="fabBtn" aria-label="レシートを追加">
         <span>+</span>
     </button>
+
+    <!-- ボトムナビゲーション -->
+    <nav class="bottom-nav" id="bottomNav" aria-label="メインナビゲーション">
+        <button class="bottom-nav__item is-active" type="button" data-nav-action="dashboard" data-scroll-target="#dashboard">
+            <span class="bottom-nav__icon" aria-hidden="true">🏠</span>
+            <span class="bottom-nav__label">ホーム</span>
+        </button>
+        <button class="bottom-nav__item" type="button" data-nav-action="calendar" data-scroll-target="#calendarSection">
+            <span class="bottom-nav__icon" aria-hidden="true">📅</span>
+            <span class="bottom-nav__label">カレンダー</span>
+        </button>
+        <button class="bottom-nav__item" type="button" data-nav-action="settings">
+            <span class="bottom-nav__icon" aria-hidden="true">⚙️</span>
+            <span class="bottom-nav__label">設定</span>
+        </button>
+    </nav>
+
+    <!-- 日付別レシート一覧モーダル -->
+    <div id="dateReceiptsModal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="dateReceiptsModalTitle">レシート一覧</h2>
+                <button class="modal-close" id="closeDateReceiptsBtn" aria-label="閉じる">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="dateReceiptsContainer" class="receipts-container">
+                    <!-- 動的に生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- 設定モーダル -->
     <div id="settingsModal" class="modal" style="display: none;">
@@ -163,7 +198,7 @@
                 <h2>設定</h2>
                 <button class="modal-close" id="closeSettingsBtn" aria-label="閉じる">×</button>
             </div>
-            
+
             <div class="modal-body">
                 <!-- 週間予算セクション -->
                 <section class="settings-section">

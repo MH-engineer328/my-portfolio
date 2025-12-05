@@ -44,9 +44,39 @@
     color: var(--text-secondary);
 }
 
+.receipt-category {
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
 .receipt-amount {
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--primary-color);
+}
+
+/* 日付別レシート一覧モーダル */
+.date-receipts-total {
+    background: linear-gradient(135deg, var(--primary-color), #2563eb);
+    color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow-md);
+}
+
+.date-receipts-total-label {
+    font-size: 1rem;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+.date-receipts-total-amount {
+    font-size: 2rem;
+    font-weight: 700;
 }
 
