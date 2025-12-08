@@ -10,17 +10,18 @@
 
 .receipts-container {
     display: grid;
-    gap: 1rem;
+    gap: 1.25rem;
 }
 
 .receipt-card {
     background: white;
     border-radius: 12px;
-    padding: 1.5rem;
+    padding: 1.25rem 1.5rem;
     box-shadow: var(--shadow);
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
+    gap: 1rem;
     transition: transform var(--transition-base), box-shadow var(--transition-base);
     cursor: pointer;
 }
@@ -30,30 +31,185 @@
     box-shadow: var(--shadow-md);
 }
 
-.receipt-info {
-    flex: 1;
+.receipt-thumb {
+    width: 80px;
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--bg-lighter);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
-.receipt-merchant {
-    font-weight: 600;
-    margin-bottom: 0.25rem;
+.receipt-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    cursor: zoom-in;
+}
+
+.receipt-thumb-placeholder {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+}
+
+.receipt-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.receipt-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.receipt-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    flex-wrap: wrap;
+}
+
+.meta-dot {
+    color: var(--text-muted);
 }
 
 .receipt-date {
-    font-size: 0.9rem;
     color: var(--text-secondary);
+    font-size: 0.95rem;
 }
 
-.receipt-category {
-    font-size: 0.85rem;
-    margin-top: 0.25rem;
-    font-weight: 500;
+.receipt-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+    justify-content: center;
+}
+
+.receipt-category-badge {
+    display: inline-block;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    border-radius: 10px;
+    background-color: var(--category-bg, rgba(107, 114, 128, 0.15));
+    color: var(--category-color, #6b7280);
+    border: 1px solid var(--category-border, rgba(107, 114, 128, 0.3));
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+.receipt-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: flex-end;
 }
 
 .receipt-amount {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 700;
     color: var(--primary-color);
+    white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+    .receipt-card {
+        grid-template-columns: auto 1fr;
+        gap: 0.85rem;
+    }
+
+    .receipt-right {
+        grid-column: span 2;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+
+    .receipt-amount {
+        font-size: 1.45rem;
+    }
+}
+
+/* 画像プレビュー（モーダル内画像） */
+.image-preview-modal img {
+    max-width: 90vw;
+    max-height: 80vh;
+    display: block;
+    margin: 0 auto;
+    border-radius: 12px;
+}
+
+.receipt-delete-btn {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    font-size: 1.3rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background-color var(--transition-base), transform var(--transition-base), border-color var(--transition-base);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    opacity: 0.8;
+    color: #dc2626;
+}
+
+.receipt-edit-btn {
+    background: #eef2ff;
+    border: 1px solid #e0e7ff;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background-color var(--transition-base), transform var(--transition-base), border-color var(--transition-base);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: #4f46e5;
+    opacity: 0.9;
+}
+
+.receipt-edit-btn:hover {
+    background-color: #e0e7ff;
+    border-color: #c7d2fe;
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+.receipt-edit-btn:active {
+    background-color: #c7d2fe;
+    transform: scale(0.97);
+}
+
+.receipt-delete-btn:hover {
+    background-color: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.receipt-delete-btn:active {
+    background-color: rgba(239, 68, 68, 0.3);
+    transform: scale(0.95);
 }
 
 /* 日付別レシート一覧モーダル */

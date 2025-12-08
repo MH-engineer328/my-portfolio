@@ -671,8 +671,9 @@ ReceiptApp.prototype.scrollToTarget = function(selector) {
         }
     };
 
-    ReceiptApp.prototype.showEditor = function() {
-        originalShowEditor.call(this);
+    ReceiptApp.prototype.showEditor = function(receipt) {
+        // 編集時は渡されたレシートをそのまま委譲し、既存データをフォームに反映する
+        originalShowEditor.call(this, receipt);
         if (typeof this.setActiveBottomNav === 'function') {
             this.setActiveBottomNav('editor');
         }

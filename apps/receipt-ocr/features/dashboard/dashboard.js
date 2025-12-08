@@ -240,7 +240,7 @@ ReceiptApp.prototype.renderRecentReceipts = function() {
 /**
  * レシートカードを作成
  */
-ReceiptApp.prototype.createReceiptCard = function(receipt) {
+ReceiptApp.prototype.createReceiptCard = function(receipt, showDeleteButton = false) {
     const card = document.createElement('div');
     card.className = 'receipt-card';
     card.dataset.receiptId = receipt.id;
@@ -249,20 +249,91 @@ ReceiptApp.prototype.createReceiptCard = function(receipt) {
     const category = settings.categories.find(c => c.id === receipt.category?.id) || settings.categories.find(c => c.id === 'other');
     const categoryColor = category?.color || '#6b7280';
 
+    // カテゴリバッジの背景色を計算（透明度を加えたRGBA形式）
+    const toRgba = (hex, alpha = 1) => {
+        if (!hex || typeof hex !== 'string') return `rgba(107, 114, 128, ${alpha})`;
+        let c = hex.replace('#', '');
+        if (c.length === 3) {
+            c = c.split('').map(ch => ch + ch).join('');
+        }
+        if (c.length !== 6) return `rgba(107, 114, 128, ${alpha})`;
+        const num = parseInt(c, 16);
+        const r = (num >> 16) & 255;
+        const g = (num >> 8) & 255;
+        const b = num & 255;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+    const categoryBgColor = toRgba(categoryColor, 0.15);
+    const categoryBorderColor = toRgba(categoryColor, 0.3);
+
+    const hasImage = !!receipt.image;
+
     card.innerHTML = `
-        <div class="receipt-info">
-            <div class="receipt-merchant">${receipt.merchant.name || '不明'}</div>
-            <div class="receipt-date">${new Date(receipt.date).toLocaleDateString('ja-JP')}</div>
-            ${receipt.category ? `<div class="receipt-category" style="color: ${categoryColor};">${receipt.category.name || ''}</div>` : ''}
+        <div class="receipt-thumb" ${hasImage ? 'data-has-image="true"' : ''}>
+            ${hasImage
+                ? `<img src="${receipt.image}" alt="レシート画像のサムネイル" />`
+                : `<div class="receipt-thumb-placeholder" aria-label="画像なし">📄</div>`}
         </div>
-        <div class="receipt-amount">¥${(receipt.totalAmount || 0).toLocaleString()}</div>
+        <div class="receipt-body">
+            <div class="receipt-title">${receipt.merchant.name || '不明'}</div>
+            <div class="receipt-meta">
+                <span class="receipt-date">${new Date(receipt.date).toLocaleDateString('ja-JP')}</span>
+                ${receipt.category ? `
+                    <span class="meta-dot">•</span>
+                    <span class="receipt-category-badge" style="--category-color: ${categoryColor}; --category-bg: ${categoryBgColor}; --category-border: ${categoryBorderColor};">${receipt.category.name || ''}</span>
+                ` : ''}
+            </div>
+        </div>
+        <div class="receipt-right">
+            <div class="receipt-amount">¥${(receipt.totalAmount || 0).toLocaleString()}</div>
+            ${showDeleteButton ? `
+            <div class="receipt-actions">
+                <button class="receipt-edit-btn" aria-label="編集" title="編集">✏️</button>
+                <button class="receipt-delete-btn" aria-label="削除" title="削除">🗑️</button>
+            </div>
+            ` : ''}
+        </div>
     `;
 
     // カードクリック時の処理（将来的に詳細表示・編集機能を追加可能）
-    card.addEventListener('click', () => {
+    card.addEventListener('click', (e) => {
+        // 削除ボタンクリック時はカードのクリックイベントを無視
+        if (e.target.closest('.receipt-delete-btn')) {
+            return;
+        }
         console.log('Receipt clicked:', receipt.id);
         // 将来的に詳細表示・編集機能を実装
     });
+
+    // 削除ボタンのイベントリスナー
+    if (showDeleteButton) {
+        const deleteBtn = card.querySelector('.receipt-delete-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // カードのクリックイベントを防ぐ
+                this.deleteReceipt(receipt.id, receipt.date);
+            });
+        }
+
+        const editBtn = card.querySelector('.receipt-edit-btn');
+        if (editBtn) {
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // カードのクリックイベントを防ぐ
+                this.startEditReceipt(receipt.id);
+            });
+        }
+    }
+
+    // サムネイルクリックで画像プレビュー
+    if (hasImage) {
+        const thumb = card.querySelector('.receipt-thumb');
+        if (thumb) {
+            thumb.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.showImagePreview(receipt.image);
+            });
+        }
+    }
 
     return card;
 };
@@ -286,7 +357,7 @@ ReceiptApp.prototype.showDateReceiptsModal = function(dateStr) {
 
     // その日のレシートを取得
     const receipts = this.storage.getReceiptsByDate(dateStr);
-    
+
     // レシートを表示
     container.innerHTML = '';
 
@@ -295,7 +366,7 @@ ReceiptApp.prototype.showDateReceiptsModal = function(dateStr) {
     } else {
         // 合計金額を計算
         const totalAmount = receipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
-        
+
         // 合計表示
         const totalEl = document.createElement('div');
         totalEl.className = 'date-receipts-total';
@@ -305,9 +376,9 @@ ReceiptApp.prototype.showDateReceiptsModal = function(dateStr) {
         `;
         container.appendChild(totalEl);
 
-        // レシートカードを表示
+        // レシートカードを表示（削除ボタン付き）
         receipts.forEach(receipt => {
-            const card = this.createReceiptCard(receipt);
+            const card = this.createReceiptCard(receipt, true);
             container.appendChild(card);
         });
     }
@@ -366,4 +437,78 @@ ReceiptApp.prototype.hideDateReceiptsModal = function() {
         this.dateReceiptsModalEscHandler = null;
     }
 };
+
+/**
+ * 画像プレビューを表示
+ */
+ReceiptApp.prototype.showImagePreview = function(src) {
+    const modal = document.getElementById('imagePreviewModal');
+    const img = document.getElementById('imagePreviewModalImg');
+    const closeBtn = document.getElementById('closeImagePreviewBtn');
+
+    if (!modal || !img || !closeBtn) {
+        console.error('Image preview modal elements not found');
+        return;
+    }
+
+    img.src = src;
+    modal.style.display = 'flex';
+
+    // 閉じるハンドラ
+    const hide = () => this.hideImagePreview();
+
+    // 既存リスナーをクリアしてから追加
+    closeBtn.replaceWith(closeBtn.cloneNode(true));
+    const newCloseBtn = document.getElementById('closeImagePreviewBtn');
+    newCloseBtn.addEventListener('click', hide);
+
+    const overlay = modal.querySelector('.modal-overlay');
+    if (overlay) {
+        overlay.replaceWith(overlay.cloneNode(true));
+        modal.querySelector('.modal-overlay').addEventListener('click', hide);
+    }
+
+    // ESC
+    const escHandler = (e) => {
+        if (e.key === 'Escape') {
+            this.hideImagePreview();
+            document.removeEventListener('keydown', escHandler);
+        }
+    };
+    document.addEventListener('keydown', escHandler);
+};
+
+/**
+ * 画像プレビューを非表示
+ */
+ReceiptApp.prototype.hideImagePreview = function() {
+    const modal = document.getElementById('imagePreviewModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+};
+
+/**
+ * レシートを削除
+ */
+ReceiptApp.prototype.deleteReceipt = function(receiptId, receiptDate) {
+    // 確認ダイアログ
+    if (!confirm('このレシートを削除しますか？')) {
+        return;
+    }
+
+    // レシートを削除
+    this.storage.deleteReceipt(receiptId);
+
+    // モーダルが開いている場合は更新
+    const modal = document.getElementById('dateReceiptsModal');
+    if (modal && modal.style.display === 'flex') {
+        // 同じ日付でモーダルを再表示
+        this.showDateReceiptsModal(receiptDate);
+    }
+
+    // ダッシュボードを更新
+    this.updateDashboard();
+};
+
 

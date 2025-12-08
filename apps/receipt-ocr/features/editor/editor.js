@@ -148,3 +148,47 @@ ReceiptApp.prototype.resetForm = function() {
     });
 };
 
+/**
+ * 既存レシートをフォームへ読み込み
+ */
+ReceiptApp.prototype.loadReceiptToForm = function(receipt) {
+    if (!receipt) return;
+
+    // 一旦クリアしてから値を反映
+    this.resetForm();
+
+    this.elements.receiptDate.value = receipt.date || '';
+    this.elements.merchantName.value = receipt.merchant?.name || '';
+    if (typeof receipt.totalAmount === 'number') {
+        this.elements.totalAmount.value = receipt.totalAmount;
+    }
+
+    const categoryId = receipt.category?.id || 'other';
+    const hasOption = Array.from(this.elements.category.options).some(opt => opt.value === categoryId);
+    this.elements.category.value = hasOption ? categoryId : 'other';
+
+    this.elements.memo.value = receipt.memo || '';
+
+    if (receipt.image) {
+        this.elements.imagePreview.innerHTML = `<img src="${receipt.image}" alt="レシート画像">`;
+    }
+
+    this.currentReceipt = receipt;
+};
+
+/**
+ * レシート編集を開始（ダッシュボードから遷移）
+ */
+ReceiptApp.prototype.startEditReceipt = function(receiptId) {
+    const target = this.storage.getReceiptById(receiptId);
+    if (!target) {
+        alert('レシートが見つかりませんでした');
+        return;
+    }
+    // モーダルが開いている場合は閉じてから編集画面へ
+    if (typeof this.hideDateReceiptsModal === 'function') {
+        this.hideDateReceiptsModal();
+    }
+    this.showEditor(target);
+};
+

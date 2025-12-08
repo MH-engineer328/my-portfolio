@@ -175,8 +175,9 @@ class ReceiptApp {
 
     /**
      * エディタを表示
+     * @param {Object|null} receipt 編集対象のレシート（新規の場合は null）
      */
-    showEditor() {
+    showEditor(receipt = null) {
         if (!this.elements.dashboard || !this.elements.editor) {
             console.error('Dashboard or Editor element not found');
             return;
@@ -186,7 +187,13 @@ class ReceiptApp {
         if (this.elements.calendarScreen) {
             this.elements.calendarScreen.classList.remove('active');
         }
-        this.resetForm();
+        if (receipt) {
+            this.loadReceiptToForm(receipt);
+            this.currentReceipt = receipt;
+        } else {
+            this.resetForm();
+            this.currentReceipt = null;
+        }
     }
 
     /**
