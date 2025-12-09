@@ -2,7 +2,7 @@
 .screen {
     display: none;
     padding: 2rem 0;
-    min-height: calc(100vh - 80px);
+    min-height: calc(100vh - 80px - var(--bottom-nav-height) - 4rem);
 }
 
 .screen.active {
@@ -25,12 +25,6 @@
     margin-bottom: 0.5rem;
 }
 
-.summary-amount {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: var(--primary-color);
-}
-
 /* チャートカード */
 .chart-card {
     background: white;
@@ -43,5 +37,238 @@
 .chart-card h3 {
     margin-bottom: 1.5rem;
     color: var(--text-color);
+}
+
+/* ダッシュボード（home-temp風） */
+.dashboard-unified {
+    --dash-bg: #f5f7fa;
+    --dash-card-bg: #ffffff;
+    --dash-primary: #0f7ae5;
+    --dash-gradient-start: #2b8cff;
+    --dash-gradient-end: #0f7ae5;
+    --dash-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
+    --dash-radius-lg: 20px;
+    --dash-radius-md: 12px;
+    background: var(--dash-bg);
+}
+
+.dashboard-unified .container {
+    max-width: 1320px;
+}
+
+.dashboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.dashboard-title {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.dashboard-subtitle {
+    margin: 6px 0 0;
+    color: #6b7280;
+    font-size: 15px;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-areas:
+        "main side"
+        "receipts side";
+    grid-template-columns: 2fr 1fr;
+    gap: 18px;
+    align-items: start;
+}
+
+.dashboard-main {
+    grid-area: main;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.dashboard-side {
+    grid-area: side;
+    position: sticky;
+    top: 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.dash-card {
+    background: var(--dash-card-bg);
+    border-radius: var(--dash-radius-lg);
+    box-shadow: var(--dash-shadow);
+    padding: 24px;
+}
+
+.dash-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.dash-card-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+}
+
+.dash-card-subtitle {
+    margin: -4px 0 12px 0;
+    color: #777;
+    font-size: 14px;
+}
+
+.dash-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e0e7ff;
+    color: var(--dash-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    animation: dash-float 3s ease-in-out infinite;
+}
+
+@keyframes dash-float {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+    100% { transform: translateY(0); }
+}
+
+.dash-monthly-value {
+    margin: 4px 0 10px;
+}
+
+.dash-currency {
+    font-size: 30px;
+    font-weight: 800;
+    color: var(--dash-primary);
+    margin-right: 4px;
+}
+
+.dash-amount {
+    font-size: 44px;
+    font-weight: 900;
+    background: linear-gradient(90deg, #2b8cff, #8a2be2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+}
+
+.dash-card-note {
+    margin: 4px 0 0;
+    color: #777;
+    font-size: 13px;
+}
+
+.dash-link-btn {
+    background: transparent;
+    border: none;
+    color: var(--dash-primary);
+    font-weight: 700;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+}
+
+.dash-link-btn:hover {
+    background: #e7f1ff;
+}
+
+.chart-card.no-shadow {
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+}
+
+.receipts-card {
+    grid-area: receipts;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 420px;
+}
+
+.receipts-card .receipts-container {
+    gap: 1rem;
+}
+
+.receipts-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+.receipts-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 4px;
+}
+
+.receipts-footer .btn {
+    width: auto;
+}
+
+.receipts-modal-list {
+    max-height: 70vh;
+    overflow-y: auto;
+    gap: 1rem;
+    padding-right: 6px;
+}
+
+.wide-modal {
+    width: 90%;
+    max-width: 960px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-side .calendar-card {
+    margin-bottom: 0;
+}
+
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "main"
+            "receipts"
+            "side";
+    }
+    .dashboard-side {
+        position: static;
+    }
+    .receipts-card {
+        min-height: auto;
+    }
+}
+
+@media (max-width: 640px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .dashboard-title {
+        font-size: 26px;
+    }
 }
 

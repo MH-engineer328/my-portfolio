@@ -6,10 +6,13 @@
 
 .image-preview-section {
     margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .image-preview {
-    width: 100%;
+    width: min(100%, 420px);
     aspect-ratio: 3/4;
     border: 2px dashed var(--border-color);
     border-radius: 12px;
@@ -33,7 +36,7 @@
 }
 
 #captureBtn {
-    width: 100%;
+    width: min(100%, 420px);
     padding: 1rem;
     font-size: 1.1rem;
 }

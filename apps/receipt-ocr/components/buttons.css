@@ -58,17 +58,23 @@
     position: fixed;
     bottom: 2rem;
     right: 2rem;
-    width: 60px;
+    min-width: 60px;
     height: 60px;
-    border-radius: 50%;
+    padding: 0 1.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    border-radius: 999px;
     background: var(--primary-color);
     color: white;
     border: none;
-    font-size: 2rem;
+    font-size: 1rem;
     cursor: pointer;
     box-shadow: var(--shadow-lg);
     transition: all var(--transition-base);
     z-index: 100;
+    white-space: nowrap;
 }
 
 .fab:hover {
@@ -76,8 +82,14 @@
     box-shadow: var(--shadow-xl);
 }
 
-.fab span {
-    display: block;
-    line-height: 60px;
+.fab__icon {
+    font-size: 1.75rem;
+    line-height: 1;
+}
+
+.fab__label {
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
 }
 

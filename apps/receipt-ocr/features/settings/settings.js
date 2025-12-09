@@ -605,15 +605,15 @@ ReceiptApp.prototype.handleBottomNavAction = function(action, scrollTarget) {
             this.showDashboard();
             this.scrollToTarget(scrollTarget || '#dashboard');
             break;
+        case 'homeV2':
+            this.showHomeV2();
+            this.scrollToTarget(scrollTarget || '#homeV2');
+            break;
         case 'calendar':
-            this.showCalendar();
+            this.showCalendar(scrollTarget || '#calendarSection');
             break;
         case 'editor':
             this.showEditor();
-            break;
-        case 'settings':
-            this.showDashboard();
-            this.showSettingsModal();
             break;
         default:
             this.showDashboard();
@@ -658,6 +658,7 @@ ReceiptApp.prototype.scrollToTarget = function(selector) {
     const originalShowDashboard = ReceiptApp.prototype.showDashboard;
     const originalShowEditor = ReceiptApp.prototype.showEditor;
     const originalShowCalendar = ReceiptApp.prototype.showCalendar;
+    const originalShowHomeV2 = ReceiptApp.prototype.showHomeV2;
 
     ReceiptApp.prototype.init = function() {
         originalInit.call(this);
@@ -679,10 +680,19 @@ ReceiptApp.prototype.scrollToTarget = function(selector) {
         }
     };
 
-    ReceiptApp.prototype.showCalendar = function() {
-        originalShowCalendar.call(this);
+    ReceiptApp.prototype.showCalendar = function(scrollTarget) {
+        originalShowCalendar.call(this, scrollTarget);
         if (typeof this.setActiveBottomNav === 'function') {
             this.setActiveBottomNav('calendar');
+        }
+    };
+
+    ReceiptApp.prototype.showHomeV2 = function() {
+        if (typeof originalShowHomeV2 === 'function') {
+            originalShowHomeV2.call(this);
+        }
+        if (typeof this.setActiveBottomNav === 'function') {
+            this.setActiveBottomNav('homeV2');
         }
     };
 })();

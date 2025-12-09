@@ -58,3 +58,35 @@
     }
 }
 
+/* モバイルでもデスクトップ構成を優先する上書き */
+@media (max-width: 960px) {
+    /* HomeV2: サイドバーを横並びのまま維持 */
+    .homeV2-layout { flex-direction: row; }
+    .homeV2-sidebar {
+        width: 240px;
+        position: sticky;
+        top: 84px;
+        flex-direction: column;
+        align-self: flex-start;
+    }
+    .homeV2-nav { display: block; }
+    .homeV2-user-info { display: block; }
+
+    /* カードをできるだけ複数カラム維持（幅が許す限り） */
+    .homeV2-card-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+
+    /* 追加ボタンを全幅にしない */
+    .homeV2-add-button { width: auto; }
+}
+
+/* さらに縮めてもデスクトップ寄りにしたい場合（任意） */
+@media (max-width: 768px) {
+    .homeV2-layout { flex-direction: column; } /* ここで初めて縦積み */
+    .homeV2-sidebar {
+        width: 100%;
+        position: static;
+        flex-direction: row;
+    }
+    .homeV2-nav { display: flex; flex-wrap: wrap; justify-content: center; }
+    .homeV2-card-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+}

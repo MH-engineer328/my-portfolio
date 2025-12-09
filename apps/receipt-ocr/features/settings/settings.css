@@ -378,7 +378,7 @@ html {
 }
 
 .app-main {
-    padding-bottom: calc(var(--bottom-nav-height) + 20px);
+    padding-bottom: var(--bottom-nav-height);
 }
 
 .bottom-nav {
@@ -388,7 +388,7 @@ html {
     bottom: 0;
     height: var(--bottom-nav-height);
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
     align-items: stretch;
     padding: 6px 10px;
     background: var(--bottom-nav-bg);

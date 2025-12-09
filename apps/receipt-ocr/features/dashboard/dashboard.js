@@ -439,6 +439,80 @@ ReceiptApp.prototype.hideDateReceiptsModal = function() {
 };
 
 /**
+ * すべてのレシート一覧モーダルを表示
+ */
+ReceiptApp.prototype.showAllReceiptsModal = function() {
+    const modal = this.elements.allReceiptsModal;
+    const container = this.elements.allReceiptsContainer;
+    const closeBtn = this.elements.closeAllReceiptsBtn;
+
+    if (!modal || !container) {
+        console.error('All receipts modal elements not found');
+        return;
+    }
+
+    const receipts = this.storage.getAllReceipts()
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    container.innerHTML = '';
+
+    if (receipts.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 2rem;">まだレシートが登録されていません</p>';
+    } else {
+        receipts.forEach(receipt => {
+            const card = this.createReceiptCard(receipt, true);
+            container.appendChild(card);
+        });
+    }
+
+    modal.style.display = 'flex';
+
+    if (!this.allReceiptsModalInitialized) {
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.hideAllReceiptsModal();
+            });
+        }
+
+        const overlay = modal.querySelector('.modal-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    this.hideAllReceiptsModal();
+                }
+            });
+        }
+
+        this.allReceiptsModalInitialized = true;
+    }
+
+    const escHandler = (e) => {
+        if (e.key === 'Escape' && modal.style.display === 'flex') {
+            this.hideAllReceiptsModal();
+        }
+    };
+    if (this.allReceiptsModalEscHandler) {
+        document.removeEventListener('keydown', this.allReceiptsModalEscHandler);
+    }
+    this.allReceiptsModalEscHandler = escHandler;
+    document.addEventListener('keydown', escHandler);
+};
+
+/**
+ * すべてのレシート一覧モーダルを非表示
+ */
+ReceiptApp.prototype.hideAllReceiptsModal = function() {
+    const modal = this.elements.allReceiptsModal;
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    if (this.allReceiptsModalEscHandler) {
+        document.removeEventListener('keydown', this.allReceiptsModalEscHandler);
+        this.allReceiptsModalEscHandler = null;
+    }
+};
+
+/**
  * 画像プレビューを表示
  */
 ReceiptApp.prototype.showImagePreview = function(src) {
