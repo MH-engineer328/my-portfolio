@@ -20,7 +20,6 @@ class ReceiptApp {
         // DOM要素の取得
         this.elements = {
             dashboard: document.getElementById('dashboard'),
-            homeV2: document.getElementById('homeV2'),
             editor: document.getElementById('editor'),
             fabBtn: document.getElementById('fabBtn'),
             imageInput: document.getElementById('imageInput'),
@@ -46,20 +45,14 @@ class ReceiptApp {
             merchantError: document.getElementById('merchantError'),
             amountError: document.getElementById('amountError'),
 
-            // 新ホーム（プレビュー）用要素
-            homeV2MonthlyTotal: document.getElementById('homeV2MonthlyTotal'),
-            homeV2Delta: document.getElementById('homeV2Delta'),
-            homeV2WeeklyBars: document.getElementById('homeV2WeeklyBars'),
-            homeV2Recent: document.getElementById('homeV2Recent'),
-            homeV2AddBtn: document.getElementById('homeV2AddBtn'),
-
             // ダッシュボード要素
+            summaryCard: document.getElementById('summaryCard'),
             monthlyTotal: document.getElementById('monthlyTotal'),
+            budgetValue: document.getElementById('budgetValue'),
+            budgetProgressFill: document.getElementById('budgetProgressFill'),
+            budgetProgressText: document.getElementById('budgetProgressText'),
+            budgetRemainingText: document.getElementById('budgetRemainingText'),
             weeklyChart: document.getElementById('weeklyChart'),
-            calendarGrid: document.getElementById('calendarGrid'),
-            calendarMonth: document.getElementById('calendarMonth'),
-            prevMonth: document.getElementById('prevMonth'),
-            nextMonth: document.getElementById('nextMonth'),
             receiptsContainer: document.getElementById('receiptsContainer'),
             dashboardAddBtn: document.getElementById('dashboardAddBtn'),
             openAllReceiptsBtn: document.getElementById('openAllReceiptsBtn'),
@@ -115,13 +108,6 @@ class ReceiptApp {
             this.elements.imageInput.click();
         });
 
-        // 新ホームの登録ボタン
-        if (this.elements.homeV2AddBtn) {
-            this.elements.homeV2AddBtn.addEventListener('click', () => {
-                this.showEditor();
-            });
-        }
-
         // ダッシュボードの追加ボタン（現在未使用だが存在時のみ対応）
         if (this.elements.dashboardAddBtn) {
             this.elements.dashboardAddBtn.addEventListener('click', () => {
@@ -166,18 +152,18 @@ class ReceiptApp {
             }
         });
 
-        // カレンダーナビゲーション
-        if (this.elements.prevMonth) {
-            this.elements.prevMonth.addEventListener('click', () => {
-                this.currentMonth.setMonth(this.currentMonth.getMonth() - 1);
-                this.renderCalendar();
-            });
-        }
-
-        if (this.elements.nextMonth) {
-            this.elements.nextMonth.addEventListener('click', () => {
-                this.currentMonth.setMonth(this.currentMonth.getMonth() + 1);
-                this.renderCalendar();
+        // サマリーカード（将来の詳細表示用プレースホルダー）
+        if (this.elements.summaryCard) {
+            const openSummaryDetail = () => {
+                // TODO: 詳細画面への遷移を実装
+                console.log('Summary card clicked');
+            };
+            this.elements.summaryCard.addEventListener('click', openSummaryDetail);
+            this.elements.summaryCard.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openSummaryDetail();
+                }
             });
         }
 
@@ -237,16 +223,12 @@ class ReceiptApp {
             console.error('Dashboard or Editor element not found');
             return;
         }
-        // ダッシュボードに統合されたカレンダーへフォーカス
+        // カレンダー機能は廃止されたため、ホームの履歴セクションにフォーカス
+        const targetSelector = scrollTarget && scrollTarget !== '#calendarSection'
+            ? scrollTarget
+            : '#recentSection';
         this.showDashboard();
-        if (typeof this.scrollToTarget === 'function') {
-            this.scrollToTarget(scrollTarget);
-        } else {
-            const target = document.querySelector(scrollTarget);
-            if (target) {
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
+        this.scrollToTarget(targetSelector);
     }
 
     /**
@@ -380,18 +362,8 @@ class ReceiptApp {
      * ダッシュボードを更新
      */
     updateDashboard() {
-        // 月次合計
-        const now = new Date();
-        const monthlyTotal = this.storage.getMonthlyTotal(now.getFullYear(), now.getMonth());
-        this.elements.monthlyTotal.textContent = monthlyTotal.toLocaleString();
-
-        // 週間グラフ
+        this.renderSummaryCard();
         this.renderWeeklyChart();
-
-        // カレンダー
-        this.renderCalendar();
-
-        // 最近のレシート
         this.renderRecentReceipts();
     }
 }

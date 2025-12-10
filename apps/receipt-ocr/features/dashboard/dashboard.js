@@ -1,14 +1,66 @@
 /**
  * ダッシュボード関連機能
- * 週間グラフ、カレンダー、最近のレシート表示
+ * サマリー、週間グラフ、最新レシート表示
  */
 
 // ReceiptAppクラスのプロトタイプにメソッドを追加
 
 /**
+ * サマリーカードを描画（今月の支出＋予算進捗）
+ */
+ReceiptApp.prototype.renderSummaryCard = function() {
+    if (!this.elements.monthlyTotal) return;
+
+    const now = new Date();
+    const monthlyTotal = this.storage.getMonthlyTotal(now.getFullYear(), now.getMonth());
+    this.elements.monthlyTotal.textContent = monthlyTotal.toLocaleString();
+
+    const settings = this.storage.getSettings() || {};
+    const weeklyBudget = Number(settings.weeklyBudget) || 0;
+    const monthlyBudget = weeklyBudget > 0 ? weeklyBudget * 4 : 0;
+
+    if (this.elements.budgetValue) {
+        this.elements.budgetValue.textContent = monthlyBudget > 0
+            ? `¥${monthlyBudget.toLocaleString()}`
+            : '未設定';
+    }
+
+    const fill = this.elements.budgetProgressFill;
+    const progressText = this.elements.budgetProgressText;
+    const remainingText = this.elements.budgetRemainingText;
+    if (!fill || !progressText || !remainingText) return;
+
+    fill.classList.remove('is-warning', 'is-danger');
+
+    if (monthlyBudget <= 0) {
+        fill.style.width = '0%';
+        progressText.textContent = '予算未設定';
+        remainingText.textContent = '設定で週間予算を登録してください';
+        return;
+    }
+
+    const ratio = monthlyTotal / monthlyBudget;
+    const percent = Math.min(Math.round(ratio * 100), 200);
+    const remaining = monthlyBudget - monthlyTotal;
+
+    if (ratio >= 1) {
+        fill.classList.add('is-danger');
+    } else if (ratio >= 0.8) {
+        fill.classList.add('is-warning');
+    }
+
+    fill.style.width = `${Math.min(percent, 110)}%`;
+    progressText.textContent = `消化率 ${percent}%`;
+    remainingText.textContent = remaining >= 0
+        ? `予算残高: ¥${remaining.toLocaleString()}`
+        : `予算超過: ¥${Math.abs(remaining).toLocaleString()}`;
+};
+
+/**
  * 週間グラフを描画
  */
 ReceiptApp.prototype.renderWeeklyChart = function() {
+    if (!this.elements.weeklyChart) return;
     const ctx = this.elements.weeklyChart.getContext('2d');
 
     // 今週の月曜日を取得
@@ -22,9 +74,10 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
     // 週間データを取得
     const weeklyReceipts = this.storage.getWeeklyReceipts(monday);
     const settings = this.storage.getSettings();
+    const weeklyBudget = Number(settings.weeklyBudget) || 0;
 
     const dayLabels = ['月', '火', '水', '木', '金', '土', '日'];
-    const dailyBudget = settings.weeklyBudget / 7;
+    const dailyBudget = weeklyBudget / 7;
     const budgetLineData = Array(dayLabels.length).fill(dailyBudget);
 
     // カテゴリメタ情報をマップ化
@@ -88,24 +141,48 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
                     data: budgetLineData,
                     type: 'line',
                     borderColor: '#f59e0b',
-                    borderWidth: 2,
-                    borderDash: [5, 5],
+                    borderWidth: 2.5,
+                    borderDash: [6, 6],
+                    tension: 0.35,
                     fill: false,
-                    pointRadius: 0,
-                    pointHoverRadius: 0,
+                    pointRadius: 3,
+                    pointHoverRadius: 4,
                     order: categoryDatasets.length + 1
                 }
             ]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: {
+                    top: 8,
+                    right: 12,
+                    left: 8,
+                    bottom: 12
+                }
+            },
+            elements: {
+                bar: {
+                    borderRadius: 10
+                }
+            },
             interaction: {
                 mode: 'index',
                 intersect: false
             },
             plugins: {
                 legend: {
-                    display: true
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        color: '#374151',
+                        padding: 16,
+                        font: {
+                            size: 12
+                        }
+                    }
                 },
                 tooltip: {
                     mode: 'index',
@@ -124,7 +201,13 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
             },
             scales: {
                 x: {
-                    stacked: true
+                    stacked: true,
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#4b5563'
+                    }
                 },
                 y: {
                     stacked: true,
@@ -132,16 +215,17 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
                     ticks: {
                         callback: function(value) {
                             return '¥' + value.toLocaleString();
-                        }
+                        },
+                        color: '#4b5563'
                     },
                     grid: {
                         color: function(context) {
-                            // 予算ラインの位置に破線を描画（視覚的な目安）
-                            const dailyBudget = settings.weeklyBudget / 7;
+                            if (!weeklyBudget) return 'rgba(148, 163, 184, 0.25)';
+                            const dailyBudget = weeklyBudget / 7;
                             if (Math.abs(context.tick.value - dailyBudget) < 10) {
                                 return '#f59e0b';
                             }
-                            return '#e2e8f0';
+                            return 'rgba(148, 163, 184, 0.25)';
                         }
                     }
                 }
@@ -151,118 +235,162 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
 };
 
 /**
- * カレンダーを描画
- */
-ReceiptApp.prototype.renderCalendar = function() {
-    if (!this.elements.calendarGrid || !this.elements.calendarMonth) {
-        console.error('Calendar elements not found');
-        return;
-    }
-
-    const year = this.currentMonth.getFullYear();
-    const month = this.currentMonth.getMonth();
-
-    // 月の表示を更新
-    if (this.elements.calendarMonth) {
-        this.elements.calendarMonth.textContent = `${year}年${month + 1}月`;
-    }
-
-    // カレンダーのグリッドをクリア
-    this.elements.calendarGrid.innerHTML = '';
-
-    // 曜日ヘッダー
-    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
-    weekdays.forEach(day => {
-        const dayEl = document.createElement('div');
-        dayEl.className = 'calendar-day-header';
-        dayEl.textContent = day;
-        dayEl.style.fontWeight = '600';
-        dayEl.style.textAlign = 'center';
-        this.elements.calendarGrid.appendChild(dayEl);
-    });
-
-    // 月の最初の日と最後の日
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const firstDayOfWeek = firstDay.getDay();
-    const daysInMonth = lastDay.getDate();
-
-    // 前月の日付を表示
-    const prevMonthLastDay = new Date(year, month, 0).getDate();
-    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
-        const dayEl = this.createCalendarDay(prevMonthLastDay - i, true);
-        this.elements.calendarGrid.appendChild(dayEl);
-    }
-
-    // 今月の日付
-    const receipts = this.storage.getReceiptsByMonth(year, month);
-    const dailyTotals = {};
-    receipts.forEach(receipt => {
-        const day = new Date(receipt.date).getDate();
-        dailyTotals[day] = (dailyTotals[day] || 0) + (receipt.totalAmount || 0);
-    });
-
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dayEl = this.createCalendarDay(day, false, dailyTotals[day]);
-        dayEl.addEventListener('click', () => {
-            // 日付をYYYY-MM-DD形式に変換
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            this.showDateReceiptsModal(dateStr);
-        });
-        this.elements.calendarGrid.appendChild(dayEl);
-    }
-
-    // 次月の日付を表示（グリッドを埋める）
-    const totalCells = this.elements.calendarGrid.children.length;
-    const remainingCells = 42 - totalCells; // 6週間分
-    for (let day = 1; day <= remainingCells; day++) {
-        const dayEl = this.createCalendarDay(day, true);
-        this.elements.calendarGrid.appendChild(dayEl);
-    }
-};
-
-/**
- * カレンダーの日付セルを作成
- */
-ReceiptApp.prototype.createCalendarDay = function(day, isOtherMonth, amount = null) {
-    const dayEl = document.createElement('div');
-    dayEl.className = 'calendar-day' + (isOtherMonth ? ' other-month' : '');
-
-    const dayNumber = document.createElement('div');
-    dayNumber.className = 'calendar-day-number';
-    dayNumber.textContent = day;
-    dayEl.appendChild(dayNumber);
-
-    if (amount && !isOtherMonth) {
-        const dayAmount = document.createElement('div');
-        dayAmount.className = 'calendar-day-amount';
-        dayAmount.textContent = `¥${amount.toLocaleString()}`;
-        dayEl.appendChild(dayAmount);
-    }
-
-    return dayEl;
-};
-
-/**
  * 最近のレシートを表示
  */
 ReceiptApp.prototype.renderRecentReceipts = function() {
-    const receipts = this.storage.getAllReceipts();
-    const recent = receipts
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, 5);
+    if (!this.elements.receiptsContainer) return;
+
+    const receipts = this.storage.getAllReceipts() || [];
+    const normalizeDate = (value) => {
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return null;
+        d.setHours(0, 0, 0, 0);
+        return d;
+    };
+    const formatKey = (d) => d.toISOString().slice(0, 10);
+    const isSameDay = (a, b) => a.getTime() === b.getTime();
+    const isYesterday = (target) => {
+        const y = new Date();
+        y.setHours(0, 0, 0, 0);
+        y.setDate(y.getDate() - 1);
+        return isSameDay(target, y);
+    };
+
+    const sorted = receipts
+        .filter(r => r && (r.date || r.createdAt))
+        .sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
+    const recent = sorted.slice(0, 12);
 
     this.elements.receiptsContainer.innerHTML = '';
 
     if (recent.length === 0) {
-        this.elements.receiptsContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted);">まだレシートが登録されていません</p>';
+        this.elements.receiptsContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 1rem 0;">まだレシートが登録されていません</p>';
         return;
     }
 
-    recent.forEach(receipt => {
-        const card = this.createReceiptCard(receipt);
-        this.elements.receiptsContainer.appendChild(card);
+    // 日付キーでグルーピング
+    const grouped = recent.reduce((map, receipt) => {
+        const d = normalizeDate(receipt.date || receipt.createdAt);
+        if (!d) return map;
+        const key = formatKey(d);
+        if (!map.has(key)) {
+            map.set(key, []);
+        }
+        map.get(key).push(receipt);
+        return map;
+    }, new Map());
+
+    // 日付降順で描画
+    const today = normalizeDate(new Date());
+    const dateKeys = Array.from(grouped.keys()).sort((a, b) => new Date(b) - new Date(a));
+    const fragment = document.createDocumentFragment();
+
+    dateKeys.forEach((dateKey) => {
+        const group = document.createElement('div');
+        group.className = 'timeline-group';
+
+        const header = document.createElement('div');
+        header.className = 'timeline-date-header';
+
+        const dateObj = normalizeDate(dateKey);
+        const labelBase = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+        const labelText = isSameDay(dateObj, today)
+            ? `今日 (${labelBase})`
+            : isYesterday(dateObj)
+                ? `昨日 (${labelBase})`
+                : labelBase;
+
+        header.innerHTML = `
+            <span class="timeline-date-label ${isSameDay(dateObj, today) ? 'is-today' : ''}">${labelText}</span>
+        `;
+
+        const itemsWrapper = document.createElement('div');
+        itemsWrapper.className = 'timeline-items';
+
+        grouped.get(dateKey).forEach((receipt) => {
+            const item = this.createTimelineItem(receipt);
+            itemsWrapper.appendChild(item);
+        });
+
+        group.appendChild(header);
+        group.appendChild(itemsWrapper);
+        fragment.appendChild(group);
     });
+
+    this.elements.receiptsContainer.appendChild(fragment);
+};
+
+/**
+ * タイムライン用のレシート行を生成
+ */
+ReceiptApp.prototype.createTimelineItem = function(receipt) {
+    const item = document.createElement('div');
+    item.className = 'timeline-item';
+    item.dataset.receiptId = receipt.id;
+
+    const formatRelativeDay = (dateObj) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const target = new Date(dateObj);
+        target.setHours(0, 0, 0, 0);
+        const diff = (today - target) / (1000 * 60 * 60 * 24);
+        if (diff === 0) return '今日';
+        if (diff === 1) return '昨日';
+        return null;
+    };
+
+    const settings = this.storage.getSettings();
+    const categories = settings.categories || [];
+    const category = categories.find(c => c.id === receipt.category?.id) || categories.find(c => c.id === 'other');
+    const categoryColor = category?.color || '#3b82f6';
+    const toRgba = (hex, alpha = 1) => {
+        if (!hex || typeof hex !== 'string') return `rgba(59, 130, 246, ${alpha})`;
+        let c = hex.replace('#', '');
+        if (c.length === 3) c = c.split('').map(ch => ch + ch).join('');
+        if (c.length !== 6) return `rgba(59, 130, 246, ${alpha})`;
+        const num = parseInt(c, 16);
+        const r = (num >> 16) & 255;
+        const g = (num >> 8) & 255;
+        const b = num & 255;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+
+    const iconMap = {
+        food: '🍚',
+        daily: '🧻',
+        restaurant: '🍽️',
+        cafe: '☕',
+        transport: '🚌',
+        other: '🧾'
+    };
+    const icon = iconMap[category?.id] || '🧾';
+    const date = new Date(receipt.date);
+    const dateLabel = `${date.getMonth() + 1}/${date.getDate()}`;
+    const relative = formatRelativeDay(date);
+    const categoryBgColor = toRgba(categoryColor, 0.16);
+    const categoryBorderColor = toRgba(categoryColor, 0.32);
+
+    item.innerHTML = `
+        <div class="timeline-icon" style="--icon-color: ${categoryColor}; --icon-bg: ${toRgba(categoryColor, 0.12)}; --icon-border: ${toRgba(categoryColor, 0.28)};">
+            ${icon}
+        </div>
+        <div class="timeline-body">
+            <div class="timeline-title">${receipt.merchant?.name || '不明な店舗'}</div>
+            <div class="timeline-meta">
+                <span class="timeline-date">${dateLabel}</span>
+                ${relative ? `<span class="timeline-relative">${relative}</span>` : ''}
+                <span class="timeline-category-badge" style="--category-color:${categoryColor}; --category-bg:${categoryBgColor}; --category-border:${categoryBorderColor};">${receipt.category?.name || 'その他'}</span>
+            </div>
+        </div>
+        <div class="timeline-amount">¥${(receipt.totalAmount || 0).toLocaleString()}</div>
+    `;
+
+    item.addEventListener('click', () => {
+        console.log('Receipt clicked:', receipt.id);
+        // 将来的に詳細表示を追加予定
+    });
+
+    return item;
 };
 
 /**
