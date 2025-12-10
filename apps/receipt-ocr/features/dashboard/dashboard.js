@@ -23,39 +23,66 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
     const weeklyReceipts = this.storage.getWeeklyReceipts(monday);
     const settings = this.storage.getSettings();
 
-    // 日別の合計を計算
-    const dailyTotals = [0, 0, 0, 0, 0, 0, 0]; // 月〜日
+    const dayLabels = ['月', '火', '水', '木', '金', '土', '日'];
+    const dailyBudget = settings.weeklyBudget / 7;
+    const budgetLineData = Array(dayLabels.length).fill(dailyBudget);
+
+    // カテゴリメタ情報をマップ化
+    const categories = settings.categories || [];
+    const categoryMetaMap = new Map();
+    categories.forEach(cat => {
+        if (cat && cat.id) {
+            categoryMetaMap.set(cat.id, cat);
+        }
+    });
+
+    const createZeroArray = () => Array(dayLabels.length).fill(0);
+    const uncategorizedKey = 'uncategorized';
+    const uncategorizedMeta = { id: uncategorizedKey, name: '未分類/その他', color: '#cbd5e1' };
+
+    // カテゴリごとの日次集計用マップ（設定済みカテゴリは0埋めで初期化）
+    const categoryDataMap = new Map();
+    categoryMetaMap.forEach((cat) => {
+        categoryDataMap.set(cat.id, createZeroArray());
+    });
+    categoryDataMap.set(uncategorizedKey, createZeroArray());
+
     weeklyReceipts.forEach(receipt => {
         const receiptDate = new Date(receipt.date);
         const dayIndex = receiptDate.getDay() === 0 ? 6 : receiptDate.getDay() - 1; // 月=0, 日=6
-        dailyTotals[dayIndex] += receipt.totalAmount || 0;
+        const amount = receipt.totalAmount || 0;
+        const categoryId = receipt?.category?.id;
+        const targetId = categoryMetaMap.has(categoryId) ? categoryId : uncategorizedKey;
+        const dataArray = categoryDataMap.get(targetId) || categoryDataMap.get(uncategorizedKey);
+        dataArray[dayIndex] += amount;
     });
 
-    // グラフの色を決定（予算超過は赤、予算内は青、50%以下は緑）
-    const colors = dailyTotals.map(amount => {
-        if (amount > settings.weeklyBudget / 7) return '#ef4444'; // 超過
-        if (amount > settings.weeklyBudget / 14) return '#3b82f6'; // 予算内
-        return '#10b981'; // 50%以下
-    });
+    // dataset化（未分類以外は合計0の場合は省略して凡例をすっきりさせる）
+    const categoryDatasets = Array.from(categoryDataMap.entries())
+        .map(([id, data]) => {
+            const meta = categoryMetaMap.get(id) || uncategorizedMeta;
+            const total = data.reduce((sum, v) => sum + v, 0);
+            if (id !== uncategorizedKey && total === 0) return null;
+            return {
+                label: meta.name || '未分類/その他',
+                data,
+                backgroundColor: meta.color || '#94a3b8',
+                stack: 'spending'
+            };
+        })
+        .filter(Boolean);
 
     // Chart.jsで描画
     if (this.weeklyChartInstance) {
         this.weeklyChartInstance.destroy();
     }
 
-    const dailyBudget = settings.weeklyBudget / 7;
-    const budgetLineData = Array(7).fill(dailyBudget);
-
     this.weeklyChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['月', '火', '水', '木', '金', '土', '日'],
+            labels: dayLabels,
             datasets: [
-                {
-                    label: '支出',
-                    data: dailyTotals,
-                    backgroundColor: colors
-                },
+                ...categoryDatasets,
                 {
                     label: '1日あたりの予算',
                     data: budgetLineData,
@@ -65,41 +92,42 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
                     borderDash: [5, 5],
                     fill: false,
                     pointRadius: 0,
-                    pointHoverRadius: 0
+                    pointHoverRadius: 0,
+                    order: categoryDatasets.length + 1
                 }
             ]
         },
         options: {
             responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
             plugins: {
                 legend: {
-                    display: true,
-                    labels: {
-                        filter: function(item, chart) {
-                            // 棒グラフの凡例は非表示、線グラフ（予算ライン）のみ表示
-                            return item.datasetIndex === 1;
-                        }
-                    }
+                    display: true
                 },
                 tooltip: {
+                    mode: 'index',
+                    intersect: false,
                     callbacks: {
                         label: function(context) {
-                            const dailyBudget = settings.weeklyBudget / 7;
-                            const amount = context.parsed.y;
-                            const diff = amount - dailyBudget;
-                            let label = `¥${amount.toLocaleString()}`;
-                            if (diff > 0) {
-                                label += ` (予算超過: +¥${diff.toLocaleString()})`;
-                            } else {
-                                label += ` (予算内: ¥${Math.abs(diff).toLocaleString()}余り)`;
+                            const datasetLabel = context.dataset.label || '';
+                            const amount = context.parsed.y || 0;
+                            if (context.dataset.type === 'line') {
+                                return `${datasetLabel}: ¥${amount.toLocaleString()}`;
                             }
-                            return label;
+                            return `${datasetLabel}: ¥${amount.toLocaleString()}`;
                         }
                     }
                 }
             },
             scales: {
+                x: {
+                    stacked: true
+                },
                 y: {
+                    stacked: true,
                     beginAtZero: true,
                     ticks: {
                         callback: function(value) {
