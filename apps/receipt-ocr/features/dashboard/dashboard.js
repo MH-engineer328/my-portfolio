@@ -5,6 +5,31 @@
 
 // ReceiptAppクラスのプロトタイプにメソッドを追加
 
+// HEX → RGBA 変換（不正値はブルー系にフォールバック）
+const hexToRgba = (hex, alpha = 1, fallbackHex = '#3b82f6') => {
+    if (!hex || typeof hex !== 'string') {
+        return hexToRgba(fallbackHex, alpha, fallbackHex);
+    }
+    let normalized = hex.trim().replace('#', '');
+    if (normalized.length === 3) {
+        normalized = normalized.split('').map(ch => ch + ch).join('');
+    }
+    if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
+        return hexToRgba(fallbackHex, alpha, fallbackHex);
+    }
+    const num = parseInt(normalized, 16);
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+// 設定からカテゴリ情報を取得（見つからない場合は other を返す）
+const findCategorySetting = (settings = {}, categoryId) => {
+    const categories = settings.categories || [];
+    return categories.find(c => c.id === categoryId) || categories.find(c => c.id === 'other') || null;
+};
+
 /**
  * サマリーカードを描画（今月の支出＋予算進捗）
  */
@@ -247,7 +272,8 @@ ReceiptApp.prototype.renderRecentReceipts = function() {
         d.setHours(0, 0, 0, 0);
         return d;
     };
-    const formatKey = (d) => d.toISOString().slice(0, 10);
+    // 日付キーはローカルタイムの深夜0時のタイムスタンプで保持し、UTC変換による日付ズレを防ぐ
+    const formatKey = (d) => d.getTime();
     const isSameDay = (a, b) => a.getTime() === b.getTime();
     const isYesterday = (target) => {
         const y = new Date();
@@ -282,7 +308,7 @@ ReceiptApp.prototype.renderRecentReceipts = function() {
 
     // 日付降順で描画
     const today = normalizeDate(new Date());
-    const dateKeys = Array.from(grouped.keys()).sort((a, b) => new Date(b) - new Date(a));
+    const dateKeys = Array.from(grouped.keys()).sort((a, b) => b - a);
     const fragment = document.createDocumentFragment();
 
     dateKeys.forEach((dateKey) => {
@@ -292,7 +318,7 @@ ReceiptApp.prototype.renderRecentReceipts = function() {
         const header = document.createElement('div');
         header.className = 'timeline-date-header';
 
-        const dateObj = normalizeDate(dateKey);
+        const dateObj = new Date(Number(dateKey));
         const labelBase = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
         const labelText = isSameDay(dateObj, today)
             ? `今日 (${labelBase})`
@@ -328,32 +354,15 @@ ReceiptApp.prototype.createTimelineItem = function(receipt) {
     item.className = 'timeline-item';
     item.dataset.receiptId = receipt.id;
 
-    const formatRelativeDay = (dateObj) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const target = new Date(dateObj);
-        target.setHours(0, 0, 0, 0);
-        const diff = (today - target) / (1000 * 60 * 60 * 24);
-        if (diff === 0) return '今日';
-        if (diff === 1) return '昨日';
-        return null;
-    };
-
-    const settings = this.storage.getSettings();
-    const categories = settings.categories || [];
-    const category = categories.find(c => c.id === receipt.category?.id) || categories.find(c => c.id === 'other');
-    const categoryColor = category?.color || '#3b82f6';
-    const toRgba = (hex, alpha = 1) => {
-        if (!hex || typeof hex !== 'string') return `rgba(59, 130, 246, ${alpha})`;
-        let c = hex.replace('#', '');
-        if (c.length === 3) c = c.split('').map(ch => ch + ch).join('');
-        if (c.length !== 6) return `rgba(59, 130, 246, ${alpha})`;
-        const num = parseInt(c, 16);
-        const r = (num >> 16) & 255;
-        const g = (num >> 8) & 255;
-        const b = num & 255;
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    };
+    const settings = this.storage.getSettings() || {};
+    const categorySetting = findCategorySetting(settings, receipt.category?.id);
+    const categoryColor = categorySetting?.color || '#3b82f6';
+    const categoryId = receipt.category?.id || categorySetting?.id;
+    const categoryName = receipt.category?.name || categorySetting?.name || 'その他';
+    const iconBg = hexToRgba(categoryColor, 0.12, '#3b82f6');
+    const iconBorder = hexToRgba(categoryColor, 0.28, '#3b82f6');
+    const categoryBgColor = hexToRgba(categoryColor, 0.16, '#3b82f6');
+    const categoryBorderColor = hexToRgba(categoryColor, 0.32, '#3b82f6');
 
     const iconMap = {
         food: '🍚',
@@ -363,23 +372,19 @@ ReceiptApp.prototype.createTimelineItem = function(receipt) {
         transport: '🚌',
         other: '🧾'
     };
-    const icon = iconMap[category?.id] || '🧾';
+    const icon = iconMap[categoryId] || '🧾';
     const date = new Date(receipt.date);
     const dateLabel = `${date.getMonth() + 1}/${date.getDate()}`;
-    const relative = formatRelativeDay(date);
-    const categoryBgColor = toRgba(categoryColor, 0.16);
-    const categoryBorderColor = toRgba(categoryColor, 0.32);
 
     item.innerHTML = `
-        <div class="timeline-icon" style="--icon-color: ${categoryColor}; --icon-bg: ${toRgba(categoryColor, 0.12)}; --icon-border: ${toRgba(categoryColor, 0.28)};">
+        <div class="timeline-icon" style="color:${categoryColor}; background:${iconBg}; border:1px solid ${iconBorder};">
             ${icon}
         </div>
         <div class="timeline-body">
             <div class="timeline-title">${receipt.merchant?.name || '不明な店舗'}</div>
             <div class="timeline-meta">
                 <span class="timeline-date">${dateLabel}</span>
-                ${relative ? `<span class="timeline-relative">${relative}</span>` : ''}
-                <span class="timeline-category-badge" style="--category-color:${categoryColor}; --category-bg:${categoryBgColor}; --category-border:${categoryBorderColor};">${receipt.category?.name || 'その他'}</span>
+                <span class="timeline-category-badge" style="background:${categoryBgColor}; color:${categoryColor}; border:1px solid ${categoryBorderColor};">${categoryName}</span>
             </div>
         </div>
         <div class="timeline-amount">¥${(receipt.totalAmount || 0).toLocaleString()}</div>
@@ -401,26 +406,12 @@ ReceiptApp.prototype.createReceiptCard = function(receipt, showDeleteButton = fa
     card.className = 'receipt-card';
     card.dataset.receiptId = receipt.id;
 
-    const settings = this.storage.getSettings();
-    const category = settings.categories.find(c => c.id === receipt.category?.id) || settings.categories.find(c => c.id === 'other');
-    const categoryColor = category?.color || '#6b7280';
-
-    // カテゴリバッジの背景色を計算（透明度を加えたRGBA形式）
-    const toRgba = (hex, alpha = 1) => {
-        if (!hex || typeof hex !== 'string') return `rgba(107, 114, 128, ${alpha})`;
-        let c = hex.replace('#', '');
-        if (c.length === 3) {
-            c = c.split('').map(ch => ch + ch).join('');
-        }
-        if (c.length !== 6) return `rgba(107, 114, 128, ${alpha})`;
-        const num = parseInt(c, 16);
-        const r = (num >> 16) & 255;
-        const g = (num >> 8) & 255;
-        const b = num & 255;
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    };
-    const categoryBgColor = toRgba(categoryColor, 0.15);
-    const categoryBorderColor = toRgba(categoryColor, 0.3);
+    const settings = this.storage.getSettings() || {};
+    const categorySetting = findCategorySetting(settings, receipt.category?.id);
+    const categoryColor = categorySetting?.color || '#6b7280';
+    const categoryName = receipt.category?.name || categorySetting?.name || '';
+    const categoryBgColor = hexToRgba(categoryColor, 0.15, '#6b7280');
+    const categoryBorderColor = hexToRgba(categoryColor, 0.3, '#6b7280');
 
     const hasImage = !!receipt.image;
 
@@ -436,7 +427,7 @@ ReceiptApp.prototype.createReceiptCard = function(receipt, showDeleteButton = fa
                 <span class="receipt-date">${new Date(receipt.date).toLocaleDateString('ja-JP')}</span>
                 ${receipt.category ? `
                     <span class="meta-dot">•</span>
-                    <span class="receipt-category-badge" style="--category-color: ${categoryColor}; --category-bg: ${categoryBgColor}; --category-border: ${categoryBorderColor};">${receipt.category.name || ''}</span>
+                    <span class="receipt-category-badge" style="background:${categoryBgColor}; color:${categoryColor}; border:1px solid ${categoryBorderColor};">${categoryName}</span>
                 ` : ''}
             </div>
         </div>

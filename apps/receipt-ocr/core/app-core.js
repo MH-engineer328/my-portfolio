@@ -62,8 +62,11 @@ class ReceiptApp {
         };
 
         // 要素の存在確認
+        // 存在しなくても良いオプション要素（現状未使用）
+        const optionalElements = new Set(['dashboardAddBtn']);
+
         const missingElements = Object.entries(this.elements)
-            .filter(([key, value]) => !value)
+            .filter(([key, value]) => !value && !optionalElements.has(key))
             .map(([key]) => key);
 
         if (missingElements.length > 0) {

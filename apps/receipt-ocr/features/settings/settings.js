@@ -5,6 +5,31 @@
 
 // ReceiptAppクラスのプロトタイプにメソッドを追加
 
+// デフォルト設計カラー（DESIGN.mdの定義を固定使用）
+const DEFAULT_CATEGORY_COLOR = '#6b7280';
+const FIXED_CATEGORY_COLORS = {
+    food: '#3b82f6',
+    daily: '#10b981',
+    restaurant: '#f97316',
+    cafe: '#8b5cf6',
+    transport: '#ef4444',
+    communication: '#06b6d4',
+    fashion: '#d946ef',
+    medical: '#14b8a6',
+    hobby: '#eab308',
+    social: '#f43f5e',
+    education: '#0ea5e9',
+    subscription: '#6366f1',
+    other: '#6b7280'
+};
+
+const resolveCategoryColor = (categoryId, color, fallback) => {
+    if (color) return color;
+    if (fallback) return fallback;
+    if (FIXED_CATEGORY_COLORS[categoryId]) return FIXED_CATEGORY_COLORS[categoryId];
+    return DEFAULT_CATEGORY_COLOR;
+};
+
 /**
  * 設定モーダルを表示
  */
@@ -18,6 +43,10 @@ ReceiptApp.prototype.showSettingsModal = function() {
 
     // 現在の設定を読み込んでフォームに反映
     this.loadSettingsToForm();
+
+    // ナビゲーション初期化＆表示パネル反映
+    this.initSettingsNavigation();
+    this.activateSettingsSection(this.activeSettingsSection || 'budget');
 
     // モーダルを表示
     modal.style.display = 'flex';
@@ -85,8 +114,51 @@ ReceiptApp.prototype.showSettingsModal = function() {
 ReceiptApp.prototype.hideSettingsModal = function() {
     const modal = document.getElementById('settingsModal');
     if (modal) {
+        this.cleanupEmptyCategories();
         modal.style.display = 'none';
     }
+};
+
+/**
+ * 設定モーダルのナビゲーションを初期化
+ */
+ReceiptApp.prototype.initSettingsNavigation = function() {
+    if (this.settingsNavInitialized) return;
+
+    const nav = document.getElementById('settingsNav');
+    if (nav) {
+        nav.addEventListener('click', (e) => {
+            const target = e.target.closest('.settings-nav__item');
+            if (!target) return;
+            const section = target.dataset.section;
+            this.activateSettingsSection(section);
+        });
+        this.settingsNavInitialized = true;
+    }
+};
+
+/**
+ * 設定モーダルのセクション切り替え
+ */
+ReceiptApp.prototype.activateSettingsSection = function(section) {
+    if (!section) return;
+    const prevSection = this.activeSettingsSection;
+    this.activeSettingsSection = section;
+
+    // カテゴリ欄から離れるときに空のカテゴリをクリーンアップ
+    if (prevSection === 'categories' && section !== 'categories') {
+        this.cleanupEmptyCategories();
+    }
+
+    const navItems = document.querySelectorAll('.settings-nav__item');
+    navItems.forEach(btn => {
+        btn.classList.toggle('is-active', btn.dataset.section === section);
+    });
+
+    const panels = document.querySelectorAll('.settings-panel');
+    panels.forEach(panel => {
+        panel.classList.toggle('is-active', panel.dataset.section === section);
+    });
 };
 
 /**
@@ -103,6 +175,9 @@ ReceiptApp.prototype.loadSettingsToForm = function() {
 
     // カテゴリリストを表示
     this.renderCategoriesList();
+
+    // キーワードカテゴリ選択を更新
+    this.renderKeywordCategorySelector();
 
     // キーワードリストを表示
     this.renderKeywordsList();
@@ -192,39 +267,257 @@ ReceiptApp.prototype.renderCategoriesList = function() {
     const settings = this.storage.getSettings();
     categoriesList.innerHTML = '';
 
-    settings.categories.forEach(category => {
+    const renderCategoryRow = (category) => {
+        const fixedColor = resolveCategoryColor(category.id, category.color);
         const categoryItem = document.createElement('div');
         categoryItem.className = 'category-item';
+        categoryItem.dataset.categoryId = category.id;
         categoryItem.innerHTML = `
             <div class="category-info">
-                <input type="color"
-                       class="category-color"
-                       value="${category.color}"
-                       data-category-id="${category.id}" />
+                <label class="category-color-picker" aria-label="カテゴリ色を変更">
+                    <span class="category-color-swatch" style="background:${fixedColor};"></span>
+                    <input type="color"
+                           class="category-color"
+                           value="${fixedColor}"
+                           data-category-id="${category.id}"
+                           aria-label="カテゴリ色を選択" />
+                </label>
                 <input type="text"
                        class="category-name"
                        value="${category.name || ''}"
                        placeholder="カテゴリ名を入力"
                        data-category-id="${category.id}" />
             </div>
-            <button class="btn btn-danger btn-sm delete-category-btn"
-                    data-category-id="${category.id}">
-                削除
-            </button>
+            <div class="category-actions">
+                <button class="category-delete-btn"
+                        type="button"
+                        aria-label="カテゴリを削除"
+                        data-category-id="${category.id}">
+                    <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                </button>
+            </div>
         `;
 
         categoriesList.appendChild(categoryItem);
+    };
+
+    settings.categories.forEach(renderCategoryRow);
+
+    if (this.isAddingCategory) {
+        const draftName = this.newCategoryDraft?.name || '';
+        const draftColor = this.newCategoryDraft?.color || DEFAULT_CATEGORY_COLOR;
+        const draftItem = document.createElement('div');
+        draftItem.className = 'category-item category-item--new';
+        draftItem.innerHTML = `
+            <div class="category-info">
+                <label class="category-color-picker" aria-label="新しいカテゴリの色を選択">
+                    <span class="category-color-swatch" style="background:${draftColor};"></span>
+                    <input type="color"
+                           class="category-color"
+                           value="${draftColor}"
+                           data-role="new-category-color"
+                           aria-label="新しいカテゴリの色を選択" />
+                </label>
+                <input type="text"
+                       class="category-name"
+                       value="${draftName}"
+                       placeholder="カテゴリ名を入力"
+                       data-role="new-category-name" />
+            </div>
+            <div class="category-actions category-actions--new">
+                <button class="category-add-save" type="button">追加</button>
+                <button class="category-add-cancel" type="button">キャンセル</button>
+            </div>
+        `;
+        categoriesList.appendChild(draftItem);
+    }
+
+    categoriesList.querySelectorAll('.category-color[data-category-id]').forEach(input => {
+        input.addEventListener('input', (e) => {
+            const color = e.target.value;
+            const categoryId = e.target.dataset.categoryId;
+            const swatch = e.target.closest('.category-color-picker')?.querySelector('.category-color-swatch');
+            if (swatch) {
+                swatch.style.backgroundColor = color;
+            }
+            this.updateCategoryColor(categoryId, color);
+        });
     });
 
     // 削除ボタンのイベントリスナー
-    categoriesList.querySelectorAll('.delete-category-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const categoryId = e.target.dataset.categoryId;
+    categoriesList.querySelectorAll('.category-delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const categoryId = btn.dataset.categoryId;
             if (confirm('このカテゴリを削除しますか？')) {
                 this.deleteCategory(categoryId);
             }
         });
     });
+
+    if (this.isAddingCategory) {
+        const draftRow = categoriesList.querySelector('.category-item--new');
+        if (draftRow) {
+            const nameInput = draftRow.querySelector('[data-role="new-category-name"]');
+            const colorInput = draftRow.querySelector('[data-role="new-category-color"]');
+            const saveBtn = draftRow.querySelector('.category-add-save');
+            const cancelBtn = draftRow.querySelector('.category-add-cancel');
+
+            if (nameInput) {
+                nameInput.addEventListener('input', (e) => {
+                    this.newCategoryDraft = {
+                        ...(this.newCategoryDraft || {}),
+                        name: e.target.value
+                    };
+                });
+            }
+
+            if (colorInput) {
+                colorInput.addEventListener('input', (e) => {
+                    const color = e.target.value;
+                    const swatch = e.target.closest('.category-color-picker')?.querySelector('.category-color-swatch');
+                    if (swatch) {
+                        swatch.style.backgroundColor = color;
+                    }
+                    this.newCategoryDraft = {
+                        ...(this.newCategoryDraft || {}),
+                        color
+                    };
+                });
+            }
+
+            if (saveBtn) {
+                saveBtn.addEventListener('click', () => {
+                    const name = (nameInput?.value || '').trim();
+                    const color = colorInput?.value || DEFAULT_CATEGORY_COLOR;
+                    if (!name) {
+                        alert('カテゴリ名を入力してください。');
+                        nameInput?.focus();
+                        return;
+                    }
+                    this.commitNewCategory(name, color);
+                });
+            }
+
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => {
+                    this.isAddingCategory = false;
+                    this.newCategoryDraft = null;
+                    this.renderCategoriesList();
+                });
+            }
+
+            // フォーカス初期化
+            if (nameInput) {
+                nameInput.focus();
+            }
+        }
+    }
+};
+
+/**
+ * カテゴリ色を即時反映・保存
+ */
+ReceiptApp.prototype.updateCategoryColor = function(categoryId, color) {
+    if (!categoryId || !color) return;
+    const settings = this.storage.getSettings();
+    const target = settings.categories.find(c => c.id === categoryId);
+    if (!target) return;
+
+    target.color = color;
+    this.storage.saveSettings(settings);
+    if (this.classifier) {
+        this.classifier.settings = settings;
+    }
+    this.renderKeywordCategorySelector(categoryId);
+    this.renderKeywordsList();
+    if (typeof this.updateDashboard === 'function') {
+        this.updateDashboard();
+    }
+};
+
+/**
+ * 新規カテゴリの追加を確定
+ */
+ReceiptApp.prototype.commitNewCategory = function(name, color) {
+    const settings = this.storage.getSettings();
+
+    const newId = 'category_' + Date.now();
+    const newCategory = {
+        id: newId,
+        name: name.trim(),
+        color: resolveCategoryColor(newId, color)
+    };
+
+    settings.categories.push(newCategory);
+
+    if (!settings.categoryKeywords[newId]) {
+        settings.categoryKeywords[newId] = [];
+    }
+
+    this.activeKeywordCategoryId = newId;
+    this.isAddingCategory = false;
+    this.newCategoryDraft = null;
+
+    this.storage.saveSettings(settings);
+    if (this.classifier) {
+        this.classifier.settings = settings;
+    }
+
+    this.renderCategoriesList();
+    this.renderKeywordCategorySelector(newId);
+    this.renderKeywordsList();
+    if (typeof this.updateDashboard === 'function') {
+        this.updateDashboard();
+    }
+};
+
+/**
+ * キーワードカテゴリ選択の描画
+ */
+ReceiptApp.prototype.renderKeywordCategorySelector = function(preferredCategoryId) {
+    const selector = document.getElementById('keywordCategorySelect');
+    if (!selector) return;
+
+    const settings = this.storage.getSettings();
+    selector.innerHTML = '';
+
+    if (!settings.categories || settings.categories.length === 0) {
+        selector.disabled = true;
+        return;
+    }
+
+    selector.disabled = false;
+
+    settings.categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.id;
+        option.textContent = category.name || '未設定';
+        selector.appendChild(option);
+    });
+
+    const existsPreferred = preferredCategoryId && settings.categories.some(c => c.id === preferredCategoryId);
+    const existsCurrent = this.activeKeywordCategoryId && settings.categories.some(c => c.id === this.activeKeywordCategoryId);
+    const nextActive = existsPreferred
+        ? preferredCategoryId
+        : (existsCurrent ? this.activeKeywordCategoryId : settings.categories[0].id);
+
+    this.activeKeywordCategoryId = nextActive;
+    selector.value = nextActive;
+
+    selector.onchange = () => {
+        this.activeKeywordCategoryId = selector.value;
+        if (this.keywordViewState && this.activeKeywordCategoryId) {
+            this.keywordViewState[this.activeKeywordCategoryId] = { collapsed: false };
+        }
+        this.renderKeywordsList();
+        // 選択したカテゴリまでスクロール
+        setTimeout(() => {
+            const target = document.querySelector(`.keyword-section[data-category-id="${this.activeKeywordCategoryId}"]`);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 50);
+    };
 };
 
 /**
@@ -241,22 +534,18 @@ ReceiptApp.prototype.renderKeywordsList = function() {
     if (!this.learningViewState) {
         this.learningViewState = { collapsed: false };
     }
+    if (this.keywordGlobalFilter === undefined) {
+        this.keywordGlobalFilter = '';
+    }
 
     const settings = this.storage.getSettings();
     keywordsList.innerHTML = '';
 
-    // 未分類・手動修正済みの店舗候補を取得（頻度優先＋鮮度）
-    const historySuggestions = this.storage.getRecentProblemMerchants(8);
+    if (!settings.categories || settings.categories.length === 0) {
+        keywordsList.innerHTML = '<p class="form-hint">先にカテゴリを作成してください。</p>';
+        return;
+    }
 
-    // カラー計算ヘルパー（カテゴリ色を薄めて背景用に）
-    const designColorMap = {
-        food: '#3b82f6',
-        daily: '#10b981',
-        restaurant: '#f59e0b',
-        cafe: '#8b5cf6',
-        transport: '#ef4444',
-        other: '#6b7280'
-    };
     const toRgba = (hex, alpha = 0.12) => {
         if (!hex || typeof hex !== 'string') return `rgba(107, 114, 128, ${alpha})`; // fallback gray
         let c = hex.replace('#', '');
@@ -271,64 +560,131 @@ ReceiptApp.prototype.renderKeywordsList = function() {
         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
 
+    // グローバル検索ボックスを生成
+    const globalSearchWrap = document.createElement('div');
+    globalSearchWrap.className = 'keyword-global-search';
+    globalSearchWrap.innerHTML = `
+        <span class="material-symbols-outlined keyword-search-icon" aria-hidden="true">search</span>
+        <input type="text"
+               id="keywordGlobalSearchInput"
+               class="keyword-search-input"
+               placeholder="🔍 キーワードを検索..."
+               value="${this.keywordGlobalFilter || ''}" />
+    `;
+    keywordsList.appendChild(globalSearchWrap);
+
+    const globalSearchInput = globalSearchWrap.querySelector('#keywordGlobalSearchInput');
+    if (globalSearchInput) {
+        globalSearchInput.addEventListener('input', (e) => {
+            this.keywordGlobalFilter = e.target.value || '';
+            this.renderKeywordsList();
+        });
+    }
+
+    const availableIds = settings.categories.map(c => c.id);
+    const globalQuery = (this.keywordGlobalFilter || '').trim().toLowerCase();
+    const isSearching = globalQuery.length > 0;
+
+    // すべてのカテゴリをアコーディオンで表示
     settings.categories.forEach(category => {
-        const keywords = settings.categoryKeywords[category.id] || [];
-        const isCollapsed = this.keywordViewState[category.id]?.collapsed || false;
-        const color = designColorMap[category.id] || category.color || '#6b7280';
+        const categoryId = category.id;
+        const keywords = settings.categoryKeywords[categoryId] || [];
+        if (!this.keywordViewState[categoryId]) {
+            // デフォルトは折りたたみ
+            this.keywordViewState[categoryId] = { collapsed: true };
+        }
+
+        const isUserCollapsed = !!this.keywordViewState[categoryId].collapsed;
+        const color = resolveCategoryColor(categoryId, category.color);
         const bgColor = toRgba(color, 0.14);
 
+        const filteredKeywords = !isSearching
+            ? keywords
+            : keywords.filter(kw => (kw || '').toLowerCase().includes(globalQuery));
+        const hasHit = filteredKeywords.length > 0;
+
+        // 検索中はヒット有無で自動開閉、未検索時はユーザー操作状態を尊重
+        const isExpanded = isSearching ? hasHit : !isUserCollapsed;
+
+        // 未分類・手動修正済みの店舗候補を取得（頻度優先＋鮮度）
+        const historySuggestions = this.storage.getRecentProblemMerchants(8);
+
         const keywordSection = document.createElement('div');
-        keywordSection.className = 'keyword-section';
+        keywordSection.className = `keyword-section ${isExpanded ? 'is-open' : 'is-collapsed'} ${isSearching ? 'is-searching' : ''}`;
+        keywordSection.dataset.categoryId = categoryId;
+
+        const hitsLabel = isSearching ? `<span class="keyword-hit">${filteredKeywords.length}/${keywords.length}件ヒット</span>` : '';
+
         keywordSection.innerHTML = `
-            <div class="keyword-header">
-                <h4>${category.name}</h4>
-                <div class="keyword-meta">
-                    <span class="keyword-count">${keywords.length}件</span>
-                    <button class="keyword-toggle-btn" data-category-id="${category.id}">
-                        ${isCollapsed ? '展開' : '折りたたむ'}
+            <button class="keyword-header-btn" type="button" data-category-id="${categoryId}" aria-expanded="${isExpanded}" ${isSearching ? 'aria-disabled="true"' : ''}>
+                <div class="keyword-header-left">
+                    <span class="keyword-name">${category.name}</span>
+                    <span class="keyword-count-badge">${keywords.length}</span>
+                    ${hitsLabel}
+                </div>
+                <div class="keyword-header-right">
+                    <span class="keyword-toggle-label">${isExpanded ? '閉じる' : '開く'}</span>
+                    <span class="keyword-toggle-icon" aria-hidden="true">${isExpanded ? '▼' : '▶'}</span>
+                </div>
+            </button>
+            <div class="keyword-body ${isExpanded ? 'is-open' : 'is-collapsed'}" data-category-id="${categoryId}">
+                <div class="keyword-tags" data-category-id="${categoryId}">
+                    ${keywords.length > 0 ? keywords.map(kw => {
+                        const visible = !globalQuery || (kw || '').toLowerCase().includes(globalQuery);
+                        return `
+                            <span class="keyword-tag" data-keyword="${kw}" style="--category-color:${color}; --category-bg:${bgColor}; display:${visible ? 'inline-flex' : 'none'};">
+                                ${kw}
+                                <button class="keyword-remove" data-keyword="${kw}" data-category-id="${categoryId}">×</button>
+                            </span>
+                        `;
+                    }).join('') : '<span class="keyword-tag keyword-tag--empty">キーワードがありません</span>'}
+                </div>
+                <div class="keyword-input-group">
+                    <input type="text"
+                           class="keyword-input"
+                           placeholder="キーワードを追加"
+                           data-category-id="${categoryId}" />
+                    <button class="btn btn-secondary btn-sm add-keyword-btn"
+                            data-category-id="${categoryId}">
+                        追加
                     </button>
                 </div>
-            </div>
-            <div class="keyword-tags ${isCollapsed ? 'is-collapsed' : ''}" data-category-id="${category.id}">
-                ${keywords.length > 0 ? keywords.map(kw => `
-                    <span class="keyword-tag" style="--category-color:${color}; --category-bg:${bgColor};">
-                        ${kw}
-                        <button class="keyword-remove" data-keyword="${kw}" data-category-id="${category.id}">×</button>
-                    </span>
-                `).join('') : '<span class="keyword-tag" style="opacity: 0.5;">キーワードがありません</span>'}
-            </div>
-            <div class="keyword-input-group">
-                <input type="text"
-                       class="keyword-input"
-                       placeholder="キーワードを追加"
-                       data-category-id="${category.id}" />
-                <button class="btn btn-secondary btn-sm add-keyword-btn"
-                        data-category-id="${category.id}">
-                    追加
-                </button>
-            </div>
-            <div class="history-suggestions">
-                <div class="history-suggestions-header">
-                    <span>最近の履歴から追加</span>
-                    <span class="history-hint">未分類・手動修正済みの店舗名を優先表示</span>
-                </div>
-                <div class="history-suggestion-chips" data-category-id="${category.id}">
-                    ${historySuggestions.length > 0 ? historySuggestions.map(s => `
-                        <button class="history-chip" style="--category-color:${color}; --category-bg:${bgColor};" data-category-id="${category.id}" data-merchant="${s.name}">
-                            ＋ ${s.name} <span class="chip-meta">${s.count}件</span>
-                        </button>
-                    `).join('') : '<span class="history-empty">候補がありません</span>'}
+                <div class="history-suggestions">
+                    <div class="history-suggestions-header">
+                        <span>最近の履歴から追加</span>
+                        <span class="history-hint">未分類・手動修正済みの店舗名を優先表示</span>
+                    </div>
+                    <div class="history-suggestion-chips" data-category-id="${categoryId}">
+                        ${historySuggestions.length > 0 ? historySuggestions.map(s => `
+                            <button class="history-chip" style="--category-color:${color}; --category-bg:${bgColor};" data-category-id="${categoryId}" data-merchant="${s.name}">
+                                ＋ ${s.name} <span class="chip-meta">${s.count}件</span>
+                            </button>
+                        `).join('') : '<span class="history-empty">候補がありません</span>'}
+                    </div>
                 </div>
             </div>
         `;
 
         keywordsList.appendChild(keywordSection);
+
+        // 開閉操作（検索中は無効）
+        const headerBtn = keywordSection.querySelector('.keyword-header-btn');
+        if (headerBtn) {
+            headerBtn.disabled = isSearching;
+            headerBtn.classList.toggle('is-disabled', isSearching);
+            headerBtn.addEventListener('click', () => {
+                if (isSearching) return;
+                const current = this.keywordViewState[categoryId]?.collapsed || false;
+                this.keywordViewState[categoryId] = { collapsed: !current };
+                this.renderKeywordsList();
+            });
+        }
     });
 
     // 学習済み店舗名（完全一致）の表示
     const learning = this.storage.getCategoryLearning() || {};
     const categoryNameMap = new Map(settings.categories.map(c => [c.id, c.name || c.id]));
-    const categoryColorMap = new Map(settings.categories.map(c => [c.id, designColorMap[c.id] || c.color || '#6b7280']));
+    const categoryColorMap = new Map(settings.categories.map(c => [c.id, resolveCategoryColor(c.id, c.color)]));
 
     const learningEntries = Object.entries(learning).map(([merchant, categoryId]) => ({
         merchant,
@@ -418,39 +774,64 @@ ReceiptApp.prototype.renderKeywordsList = function() {
             this.renderKeywordsList();
         });
     }
-
-    // 折りたたみ/展開トグル
-    keywordsList.querySelectorAll('.keyword-toggle-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const categoryId = e.target.dataset.categoryId;
-            const current = this.keywordViewState[categoryId]?.collapsed || false;
-            this.keywordViewState[categoryId] = { collapsed: !current };
-            this.renderKeywordsList();
-        });
-    });
 };
 
 /**
  * カテゴリをフォームから保存
  */
 ReceiptApp.prototype.saveCategoriesFromForm = function(settings) {
-    const categoryItems = document.querySelectorAll('.category-item');
+    const categoryItems = document.querySelectorAll('.category-item[data-category-id]');
     const categories = [];
 
     categoryItems.forEach(item => {
         const colorInput = item.querySelector('.category-color');
         const nameInput = item.querySelector('.category-name');
+        const targetInput = nameInput || colorInput;
+        if (!targetInput) return;
 
-        if (colorInput && nameInput) {
-            categories.push({
-                id: colorInput.dataset.categoryId,
-                name: nameInput.value.trim() || '未設定',
-                color: colorInput.value
-            });
-        }
+        const name = nameInput ? nameInput.value.trim() : '';
+        if (name.length === 0) return; // 空欄はスキップ
+        const categoryId = targetInput.dataset.categoryId;
+        categories.push({
+            id: categoryId,
+            name,
+            color: resolveCategoryColor(categoryId, colorInput ? colorInput.value : undefined)
+        });
     });
 
     settings.categories = categories;
+};
+
+/**
+ * 空のカテゴリ（名称未入力）を削除し、関連キーワードも整理
+ */
+ReceiptApp.prototype.cleanupEmptyCategories = function() {
+    const settings = this.storage.getSettings();
+    const before = settings.categories.length;
+    const cleaned = [];
+
+    settings.categories.forEach(cat => {
+        const name = (cat.name || '').trim();
+        if (name.length === 0) {
+            // 紐づくキーワードも削除
+            if (settings.categoryKeywords[cat.id]) {
+                delete settings.categoryKeywords[cat.id];
+            }
+            return;
+        }
+        cleaned.push({ ...cat, name });
+    });
+
+    if (cleaned.length !== before) {
+        settings.categories = cleaned;
+        this.storage.saveSettings(settings);
+        this.isAddingCategory = false;
+        this.newCategoryDraft = null;
+        // UI再描画
+        this.renderCategoriesList();
+        this.renderKeywordCategorySelector();
+        this.renderKeywordsList();
+    }
 };
 
 /**
@@ -496,8 +877,14 @@ ReceiptApp.prototype.deleteCategory = function(categoryId) {
         delete settings.categoryKeywords[categoryId];
     }
 
+    // キーワード選択のアクティブ状態を補正
+    if (this.activeKeywordCategoryId === categoryId) {
+        this.activeKeywordCategoryId = settings.categories[0]?.id || '';
+    }
+
     this.storage.saveSettings(settings);
     this.renderCategoriesList();
+    this.renderKeywordCategorySelector();
     this.renderKeywordsList();
 };
 
@@ -553,28 +940,24 @@ ReceiptApp.prototype.removeKeyword = function(categoryId, keyword) {
  * カテゴリを追加
  */
 ReceiptApp.prototype.addCategory = function() {
-    const settings = this.storage.getSettings();
-
-    // 新しいカテゴリIDを生成
-    const newId = 'category_' + Date.now();
-    const newCategory = {
-        id: newId,
-        name: '',
-        color: '#6b7280'
-    };
-
-    settings.categories.push(newCategory);
-
-    // キーワード配列も初期化
-    if (!settings.categoryKeywords[newId]) {
-        settings.categoryKeywords[newId] = [];
+    if (this.isAddingCategory) {
+        const draftNameInput = document.querySelector('[data-role="new-category-name"]');
+        if (draftNameInput) {
+            draftNameInput.focus();
+        }
+        return;
     }
 
-    this.storage.saveSettings(settings);
+    this.isAddingCategory = true;
+    this.newCategoryDraft = this.newCategoryDraft || { name: '', color: DEFAULT_CATEGORY_COLOR };
 
-    // リストを再描画
     this.renderCategoriesList();
-    this.renderKeywordsList();
+    setTimeout(() => {
+        const draftNameInput = document.querySelector('[data-role="new-category-name"]');
+        if (draftNameInput) {
+            draftNameInput.focus();
+        }
+    }, 0);
 };
 
 /**

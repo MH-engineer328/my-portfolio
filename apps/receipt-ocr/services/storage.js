@@ -130,19 +130,34 @@ class ReceiptStorage {
         return {
             weeklyBudget: 10000,
             categories: [
-                { id: 'food', name: '食費', color: '#3b82f6' },
-                { id: 'daily', name: '日用品', color: '#10b981' },
-                { id: 'restaurant', name: '外食', color: '#f59e0b' },
-                { id: 'cafe', name: 'カフェ', color: '#8b5cf6' },
-                { id: 'transport', name: '交通費', color: '#ef4444' },
-                { id: 'other', name: 'その他', color: '#6b7280' }
+                { id: 'food', name: '食費', icon: '🍙', color: '#3b82f6' },
+                { id: 'daily', name: '日用品', icon: '🧻', color: '#10b981' },
+                { id: 'restaurant', name: '外食', icon: '🍽️', color: '#f97316' },
+                { id: 'cafe', name: 'カフェ', icon: '☕', color: '#8b5cf6' },
+                { id: 'transport', name: '交通費', icon: '🚃', color: '#ef4444' },
+                { id: 'communication', name: '通信費', icon: '📱', color: '#06b6d4' },
+                { id: 'fashion', name: '衣服・美容', icon: '💅', color: '#d946ef' },
+                { id: 'medical', name: '医療・健康', icon: '💊', color: '#14b8a6' },
+                { id: 'hobby', name: '趣味・娯楽', icon: '🎮', color: '#eab308' },
+                { id: 'social', name: '交際費', icon: '🎁', color: '#f43f5e' },
+                { id: 'education', name: '学習・書籍', icon: '📚', color: '#0ea5e9' },
+                { id: 'subscription', name: 'サブスク', icon: '🔄', color: '#6366f1' },
+                { id: 'other', name: 'その他', icon: '📦', color: '#6b7280' }
             ],
             categoryKeywords: {
                 food: ['スーパー', 'コンビニ', 'セブン', 'ファミマ', 'ローソン', 'イオン'],
                 daily: ['マツキヨ', '薬局', 'ドラッグ', 'マツモトキヨシ'],
                 restaurant: ['ガスト', 'サイゼ', 'レストラン', 'すき家'],
                 cafe: ['スタバ', 'タリーズ', 'カフェ', 'スターバックス'],
-                transport: ['JR', '地下鉄', 'バス', 'タクシー', '電車']
+                transport: ['JR', '地下鉄', 'バス', 'タクシー', '電車'],
+                communication: [],
+                fashion: [],
+                medical: [],
+                hobby: [],
+                social: [],
+                education: [],
+                subscription: [],
+                other: []
             }
         };
     }
