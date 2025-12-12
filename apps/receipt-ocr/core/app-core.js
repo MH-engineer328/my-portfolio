@@ -6,7 +6,7 @@
 class ReceiptApp {
     constructor() {
         this.storage = new ReceiptStorage();
-        this.ocrService = new OCRService();
+        this.geminiService = new GeminiService(this.storage);
         this.parser = new ReceiptParser();
         this.classifier = new CategoryClassifier(this.storage);
 

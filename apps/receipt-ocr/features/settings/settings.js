@@ -78,6 +78,14 @@ ReceiptApp.prototype.showSettingsModal = function() {
         saveBtn.addEventListener('click', saveHandler);
     }
 
+    // APIキー削除ボタン
+    const clearApiKeyBtn = document.getElementById('clearApiKeyBtn');
+    if (clearApiKeyBtn) {
+        clearApiKeyBtn.addEventListener('click', () => {
+            this.clearAuthSettings();
+        });
+    }
+
     // カテゴリ追加ボタンのイベントリスナー
     const addCategoryBtn = document.getElementById('addCategoryBtn');
     if (addCategoryBtn) {
@@ -85,6 +93,15 @@ ReceiptApp.prototype.showSettingsModal = function() {
             this.addCategory();
         };
         addCategoryBtn.addEventListener('click', addHandler);
+    }
+
+    // カテゴリリセットボタンのイベントリスナー
+    const resetCategoriesBtn = document.getElementById('resetCategoriesBtn');
+    if (resetCategoriesBtn) {
+        const resetHandler = () => {
+            this.resetCategoriesToDefault();
+        };
+        resetCategoriesBtn.addEventListener('click', resetHandler);
     }
 
     // 背景クリックで閉じる
@@ -166,6 +183,7 @@ ReceiptApp.prototype.activateSettingsSection = function(section) {
  */
 ReceiptApp.prototype.loadSettingsToForm = function() {
     const settings = this.storage.getSettings();
+    this.loadAuthSettings();
 
     // 週間予算
     const budgetInput = document.getElementById('weeklyBudgetInput');
@@ -181,6 +199,74 @@ ReceiptApp.prototype.loadSettingsToForm = function() {
 
     // キーワードリストを表示
     this.renderKeywordsList();
+};
+
+/**
+ * Gemini BYOK 設定をフォームにロード
+ */
+ReceiptApp.prototype.loadAuthSettings = function() {
+    const apiKeyInput = document.getElementById('geminiApiKeyInput');
+    const demoToggle = document.getElementById('geminiDemoModeToggle');
+    const status = document.getElementById('geminiApiKeyStatus');
+
+    const auth = this.storage.getAuthConfig();
+    if (apiKeyInput) {
+        apiKeyInput.value = auth.apiKey || '';
+    }
+    if (demoToggle) {
+        demoToggle.checked = !!auth.useDemoMode || !auth.apiKey;
+    }
+    this.updateApiKeyStatus(auth);
+
+    if (demoToggle && !demoToggle.dataset.bound) {
+        demoToggle.addEventListener('change', () => {
+            const updated = this.storage.saveAuthConfig({
+                apiKey: apiKeyInput ? apiKeyInput.value : '',
+                useDemoMode: demoToggle.checked
+            });
+            this.updateApiKeyStatus(updated);
+        });
+        demoToggle.dataset.bound = 'true';
+    }
+};
+
+ReceiptApp.prototype.updateApiKeyStatus = function(auth) {
+    const status = document.getElementById('geminiApiKeyStatus');
+    if (!status) return;
+    if (auth.apiKey) {
+        status.textContent = auth.useDemoMode
+            ? 'APIキーは保存済みですがデモモードで動作します。'
+            : '保存済みの API キーを使用します。';
+    } else {
+        status.textContent = 'APIキー未設定: デモモードのダミー結果を返します。';
+    }
+};
+
+/**
+ * Gemini BYOK 設定を保存
+ */
+ReceiptApp.prototype.saveAuthSettings = function() {
+    const apiKeyInput = document.getElementById('geminiApiKeyInput');
+    const demoToggle = document.getElementById('geminiDemoModeToggle');
+    if (!apiKeyInput || !demoToggle) return;
+
+    const saved = this.storage.saveAuthConfig({
+        apiKey: apiKeyInput.value,
+        useDemoMode: demoToggle.checked
+    });
+    this.updateApiKeyStatus(saved);
+};
+
+/**
+ * APIキーを削除してデモモードへ戻す
+ */
+ReceiptApp.prototype.clearAuthSettings = function() {
+    const apiKeyInput = document.getElementById('geminiApiKeyInput');
+    const demoToggle = document.getElementById('geminiDemoModeToggle');
+    this.storage.clearAuthConfig();
+    if (apiKeyInput) apiKeyInput.value = '';
+    if (demoToggle) demoToggle.checked = true;
+    this.updateApiKeyStatus({ apiKey: '', useDemoMode: true });
 };
 
 /**
@@ -205,6 +291,9 @@ ReceiptApp.prototype.saveSettings = function() {
 
     // キーワードの変更を保存
     this.saveKeywordsFromForm(settings);
+
+    // Gemini BYOK 設定を保存
+    this.saveAuthSettings();
 
     // LocalStorageに保存
     this.storage.saveSettings(settings);
@@ -958,6 +1047,77 @@ ReceiptApp.prototype.addCategory = function() {
             draftNameInput.focus();
         }
     }, 0);
+};
+
+/**
+ * カテゴリを初期設定にリセット
+ */
+ReceiptApp.prototype.resetCategoriesToDefault = function() {
+    if (!confirm('カテゴリを初期設定にリセットしますか？\n現在のカテゴリ設定はすべて削除されます。')) {
+        return;
+    }
+
+    // デフォルト設定を取得（storage.jsのgetSettings()のデフォルト値を使用）
+    const defaultSettings = {
+        weeklyBudget: 10000,
+        categories: [
+            { id: 'food', name: '食費', icon: '🍙', color: '#3b82f6' },
+            { id: 'daily', name: '日用品', icon: '🧻', color: '#10b981' },
+            { id: 'restaurant', name: '外食', icon: '🍽️', color: '#f97316' },
+            { id: 'cafe', name: 'カフェ', icon: '☕', color: '#8b5cf6' },
+            { id: 'transport', name: '交通費', icon: '🚃', color: '#ef4444' },
+            { id: 'communication', name: '通信費', icon: '📱', color: '#06b6d4' },
+            { id: 'fashion', name: '衣服・美容', icon: '💅', color: '#d946ef' },
+            { id: 'medical', name: '医療・健康', icon: '💊', color: '#14b8a6' },
+            { id: 'hobby', name: '趣味・娯楽', icon: '🎮', color: '#eab308' },
+            { id: 'social', name: '交際費', icon: '🎁', color: '#f43f5e' },
+            { id: 'education', name: '学習・書籍', icon: '📚', color: '#0ea5e9' },
+            { id: 'subscription', name: 'サブスク', icon: '🔄', color: '#6366f1' },
+            { id: 'other', name: 'その他', icon: '📦', color: '#6b7280' }
+        ],
+        categoryKeywords: {
+            food: ['スーパー', 'コンビニ', 'セブン', 'ファミマ', 'ローソン', 'イオン'],
+            daily: ['マツキヨ', '薬局', 'ドラッグ', 'マツモトキヨシ'],
+            restaurant: ['ガスト', 'サイゼ', 'レストラン', 'すき家'],
+            cafe: ['スタバ', 'タリーズ', 'カフェ', 'スターバックス'],
+            transport: ['JR', '地下鉄', 'バス', 'タクシー', '電車'],
+            communication: [],
+            fashion: [],
+            medical: [],
+            hobby: [],
+            social: [],
+            education: [],
+            subscription: [],
+            other: []
+        }
+    };
+
+    // 現在の設定を取得して週間予算を保持
+    const currentSettings = this.storage.getSettings();
+    defaultSettings.weeklyBudget = currentSettings.weeklyBudget || 10000;
+
+    // 設定を保存
+    this.storage.saveSettings(defaultSettings);
+
+    // 分類器の設定を更新
+    if (this.classifier) {
+        this.classifier.settings = defaultSettings;
+    }
+
+    // 追加中のカテゴリをクリア
+    this.isAddingCategory = false;
+    this.newCategoryDraft = null;
+
+    // UIを更新
+    this.renderCategoriesList();
+    this.renderKeywordCategorySelector();
+    this.renderKeywordsList();
+    this.updateCategorySelect();
+    if (typeof this.updateDashboard === 'function') {
+        this.updateDashboard();
+    }
+
+    console.log('カテゴリを初期設定にリセットしました');
 };
 
 /**

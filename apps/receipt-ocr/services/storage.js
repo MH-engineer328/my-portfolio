@@ -8,6 +8,7 @@ class ReceiptStorage {
         this.storageKey = 'smart_receipt_data_v1';
         this.categoryLearningKey = 'smart_receipt_category_learning_v1';
         this.settingsKey = 'smart_receipt_settings_v1';
+        this.authKey = 'smart_receipt_auth_v1';
     }
 
     /**
@@ -160,6 +161,47 @@ class ReceiptStorage {
                 other: []
             }
         };
+    }
+
+    /**
+     * Gemini APIキー設定を取得（BYOK）
+     * @returns {{ apiKey: string, useDemoMode: boolean }}
+     */
+    getAuthConfig() {
+        const data = localStorage.getItem(this.authKey);
+        if (data) {
+            try {
+                const parsed = JSON.parse(data);
+                return {
+                    apiKey: parsed.apiKey || '',
+                    useDemoMode: !!parsed.useDemoMode
+                };
+            } catch (e) {
+                console.warn('Auth config parse error, fallback to default', e);
+            }
+        }
+        return { apiKey: '', useDemoMode: false };
+    }
+
+    /**
+     * Gemini APIキー設定を保存（BYOK）
+     * @param {{ apiKey: string, useDemoMode: boolean }} config
+     * @returns {{ apiKey: string, useDemoMode: boolean }}
+     */
+    saveAuthConfig(config) {
+        const safeConfig = {
+            apiKey: (config?.apiKey || '').trim(),
+            useDemoMode: !!(config?.useDemoMode)
+        };
+        localStorage.setItem(this.authKey, JSON.stringify(safeConfig));
+        return safeConfig;
+    }
+
+    /**
+     * Gemini APIキー設定を削除（BYOK）
+     */
+    clearAuthConfig() {
+        localStorage.removeItem(this.authKey);
     }
 
     /**

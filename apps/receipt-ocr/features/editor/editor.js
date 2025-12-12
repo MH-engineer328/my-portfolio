@@ -19,11 +19,11 @@ ReceiptApp.prototype.handleImageUpload = async function(file) {
     this.elements.ocrLoading.style.display = 'block';
 
     try {
-        // OCR実行
-        const ocrResult = await this.ocrService.recognizeText(file);
+        // Gemini で解析
+        const geminiResult = await this.geminiService.analyzeReceipt(file);
 
-        // テキスト解析
-        const parsed = this.parser.parse(ocrResult.text);
+        // テキスト解析（JSONパース＋バリデーション）
+        const parsed = this.parser.parse(geminiResult.text);
 
         // カテゴリ自動分類
         const category = this.classifier.classify(
@@ -35,10 +35,11 @@ ReceiptApp.prototype.handleImageUpload = async function(file) {
         this.fillForm(parsed, category);
 
         // 画像をリサイズして保存用に準備
-        const thumbnail = await this.ocrService.resizeImage(file);
+        const thumbnail = await this.geminiService.createThumbnail(file);
         this.currentReceipt = {
             image: thumbnail,
-            ocrRawText: ocrResult.text
+            ocrRawText: parsed.rawText || geminiResult.text,
+            source: geminiResult.isDemo ? 'demo' : 'gemini'
         };
 
     } catch (error) {

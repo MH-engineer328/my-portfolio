@@ -292,7 +292,10 @@
                                 <div id="categoriesList" class="category-list categories-list">
                                     <!-- 動的に生成 -->
                                 </div>
-                                <button class="btn btn-secondary" id="addCategoryBtn">+ カテゴリを追加</button>
+                                <div class="category-actions-bar">
+                                    <button class="btn btn-secondary" id="addCategoryBtn">+ カテゴリを追加</button>
+                                    <button class="btn btn-secondary" id="resetCategoriesBtn">初期設定にリセット</button>
+                                </div>
                             </div>
                         </section>
 
@@ -314,6 +317,24 @@
                         <!-- データ管理セクション -->
                         <section class="settings-panel" data-section="data">
                             <div class="settings-section">
+                                <h3>AI設定（Gemini BYOK）</h3>
+                                <div class="form-group">
+                                    <label for="geminiApiKeyInput">Google Gemini APIキー</label>
+                                    <input type="password" id="geminiApiKeyInput" placeholder="AIza..." autocomplete="off" />
+                                    <p class="form-hint">入力したキーはブラウザのLocalStorageにのみ保存されます。未入力の場合はデモモードとしてダミー結果を返します。</p>
+                                    <div class="api-key-actions">
+                                        <button class="btn btn-secondary btn-sm" type="button" id="clearApiKeyBtn">APIキーを削除</button>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="geminiDemoModeToggle">デモモードを使う</label>
+                                    <div class="demo-toggle-row">
+                                        <input type="checkbox" id="geminiDemoModeToggle" />
+                                        <span class="form-hint-inline">オンの場合は常にダミー結果を返します。</span>
+                                    </div>
+                                </div>
+                                <p class="form-hint" id="geminiApiKeyStatus"></p>
+
                                 <h3>データ管理</h3>
                                 <p class="form-hint">バックアップやエクスポート機能は今後追加予定です。</p>
                                 <div class="data-management-placeholder">
@@ -340,7 +361,7 @@
     <script src="services/storage.js"></script>
     <script src="services/parser.js"></script>
     <script src="services/category-classifier.js"></script>
-    <script src="services/ocr-service.js"></script>
+    <script src="services/gemini-service.js"></script>
     <!-- アプリケーションコア -->
     <script src="core/app-core.js"></script>
     <!-- 機能別モジュール -->
