@@ -50,16 +50,18 @@ ReceiptApp.prototype.renderSummaryCard = function() {
             : '未設定';
     }
 
-    const fill = this.elements.budgetProgressFill;
+    const chartCanvas = this.elements.budgetChart;
     const progressText = this.elements.budgetProgressText;
     const remainingText = this.elements.budgetRemainingText;
-    if (!fill || !progressText || !remainingText) return;
-
-    fill.classList.remove('is-warning', 'is-danger');
+    if (!chartCanvas || !progressText || !remainingText) return;
 
     if (monthlyBudget <= 0) {
-        fill.style.width = '0%';
-        progressText.textContent = '予算未設定';
+        // 予算未設定時はチャートを非表示にするか、空のチャートを表示
+        if (this.budgetChartInstance) {
+            this.budgetChartInstance.destroy();
+            this.budgetChartInstance = null;
+        }
+        progressText.textContent = '未設定';
         remainingText.textContent = '設定で週間予算を登録してください';
         return;
     }
@@ -68,14 +70,53 @@ ReceiptApp.prototype.renderSummaryCard = function() {
     const percent = Math.min(Math.round(ratio * 100), 200);
     const remaining = monthlyBudget - monthlyTotal;
 
-    if (ratio >= 1) {
-        fill.classList.add('is-danger');
-    } else if (ratio >= 0.8) {
-        fill.classList.add('is-warning');
+    // ドーナツチャートのデータ
+    const spent = Math.min(monthlyTotal, monthlyBudget);
+    const remainingAmount = Math.max(0, monthlyBudget - monthlyTotal);
+    
+    // 予算オーバー時は全体を赤にする
+    const isOverBudget = monthlyTotal > monthlyBudget;
+    const spentColor = isOverBudget ? '#ef4444' : '#3b82f6'; // オーバー時は赤、通常は青
+    const remainingColor = '#e5e7eb'; // 残高は薄いグレー
+
+    // Chart.jsでドーナツチャートを描画
+    const ctx = chartCanvas.getContext('2d');
+    
+    // 既存のチャートインスタンスを破棄
+    if (this.budgetChartInstance) {
+        this.budgetChartInstance.destroy();
     }
 
-    fill.style.width = `${Math.min(percent, 110)}%`;
-    progressText.textContent = `消化率 ${percent}%`;
+    this.budgetChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: isOverBudget 
+                    ? [monthlyBudget, monthlyTotal - monthlyBudget] // オーバー時は予算分と超過分
+                    : [spent, remainingAmount], // 通常時は支出と残高
+                backgroundColor: isOverBudget
+                    ? [spentColor, '#dc2626'] // オーバー時は両方赤系
+                    : [spentColor, remainingColor],
+                borderWidth: 0,
+                cutout: '75%' // ドーナツの内径（75%で中央にスペース）
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    enabled: false
+                }
+            }
+        }
+    });
+
+    // 中央のテキストを更新
+    progressText.textContent = `${percent}%`;
     remainingText.textContent = remaining >= 0
         ? `予算残高: ¥${remaining.toLocaleString()}`
         : `予算超過: ¥${Math.abs(remaining).toLocaleString()}`;
@@ -189,9 +230,10 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
             },
             elements: {
                 bar: {
-                    borderRadius: 10
+                    borderRadius: 4
                 }
             },
+            barPercentage: 0.65,
             interaction: {
                 mode: 'index',
                 intersect: false
@@ -241,17 +283,21 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
                         callback: function(value) {
                             return '¥' + value.toLocaleString();
                         },
-                        color: '#4b5563'
+                        color: '#4b5563',
+                        maxTicksLimit: 5
                     },
                     grid: {
                         color: function(context) {
-                            if (!weeklyBudget) return 'rgba(148, 163, 184, 0.25)';
+                            if (!weeklyBudget) return '#f3f4f6';
                             const dailyBudget = weeklyBudget / 7;
                             if (Math.abs(context.tick.value - dailyBudget) < 10) {
                                 return '#f59e0b';
                             }
-                            return 'rgba(148, 163, 184, 0.25)';
+                            return '#f3f4f6';
                         }
+                    },
+                    border: {
+                        display: false
                     }
                 }
             }
@@ -365,11 +411,18 @@ ReceiptApp.prototype.createTimelineItem = function(receipt) {
     const categoryBorderColor = hexToRgba(categoryColor, 0.32, '#3b82f6');
 
     const iconMap = {
-        food: '🍚',
+        food: '🛒',
         daily: '🧻',
         restaurant: '🍽️',
         cafe: '☕',
-        transport: '🚌',
+        transport: '🚃',
+        communication: '📱',
+        fashion: '👕',
+        medical: '💊',
+        hobby: '🎮',
+        social: '🎁',
+        education: '📚',
+        subscription: '🔄',
         other: '🧾'
     };
     const icon = iconMap[categoryId] || '🧾';
@@ -414,19 +467,40 @@ ReceiptApp.prototype.createReceiptCard = function(receipt, showDeleteButton = fa
     const categoryBorderColor = hexToRgba(categoryColor, 0.3, '#6b7280');
 
     const hasImage = !!receipt.image;
+    
+    // カテゴリアイコン用のマップ
+    const iconMap = {
+        food: '🛒',
+        daily: '🧻',
+        restaurant: '🍽️',
+        cafe: '☕',
+        transport: '🚃',
+        communication: '📱',
+        fashion: '👕',
+        medical: '💊',
+        hobby: '🎮',
+        social: '🎁',
+        education: '📚',
+        subscription: '🔄',
+        other: '🧾'
+    };
+    const categoryId = receipt.category?.id || categorySetting?.id || 'other';
+    const categoryIcon = iconMap[categoryId] || '🧾';
+    const iconBg = hexToRgba(categoryColor, 0.12, '#6b7280');
+    const iconBorder = hexToRgba(categoryColor, 0.28, '#6b7280');
+    
+    const date = new Date(receipt.date);
+    const dateLabel = `${date.getMonth() + 1}/${date.getDate()}`;
 
     card.innerHTML = `
-        <div class="receipt-thumb" ${hasImage ? 'data-has-image="true"' : ''}>
-            ${hasImage
-                ? `<img src="${receipt.image}" alt="レシート画像のサムネイル" />`
-                : `<div class="receipt-thumb-placeholder" aria-label="画像なし">📄</div>`}
+        <div class="receipt-icon" style="color:${categoryColor}; background:${iconBg}; border:1px solid ${iconBorder};">
+            ${categoryIcon}
         </div>
         <div class="receipt-body">
             <div class="receipt-title">${receipt.merchant.name || '不明'}</div>
             <div class="receipt-meta">
-                <span class="receipt-date">${new Date(receipt.date).toLocaleDateString('ja-JP')}</span>
+                <span class="receipt-date">${dateLabel}</span>
                 ${receipt.category ? `
-                    <span class="meta-dot">•</span>
                     <span class="receipt-category-badge" style="background:${categoryBgColor}; color:${categoryColor}; border:1px solid ${categoryBorderColor};">${categoryName}</span>
                 ` : ''}
             </div>

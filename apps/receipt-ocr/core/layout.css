@@ -1,8 +1,39 @@
+/* アプリコンテナ（モバイルファースト、最大480px幅） */
+.app-container {
+    max-width: 480px;
+    margin: 0 auto;
+    background: var(--bg-color);
+    min-height: 100vh;
+    box-shadow: none;
+}
+
+/* アプリコンテナ内のコンテナスタイル調整 */
+.app-container .container {
+    max-width: 100%;
+    padding: 0 16px;
+}
+
+/* PC/タブレット表示時のスタイル */
+@media (min-width: 481px) {
+    body {
+        background: var(--bg-lighter);
+    }
+
+    .app-container {
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+    }
+
+    /* FABボタンを480px幅のアプリ領域の右端に配置 */
+    .fab {
+        right: calc(50% - 240px + 2rem);
+    }
+}
+
 /* 画面切り替え */
 .screen {
     display: none;
     padding: 2rem 0;
-    min-height: calc(100vh - 80px - var(--bottom-nav-height) - 4rem);
+    min-height: calc(100vh - 64px - var(--bottom-nav-height, 0px) - 4rem);
 }
 
 .screen.active {

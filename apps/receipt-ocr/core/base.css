@@ -34,7 +34,7 @@ body {
     color: var(--text-color);
     background: var(--bg-light);
     line-height: 1.7;
-    padding-top: 80px;
+    padding-top: 64px;
 }
 
 .container {

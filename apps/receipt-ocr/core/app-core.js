@@ -49,7 +49,8 @@ class ReceiptApp {
             summaryCard: document.getElementById('summaryCard'),
             monthlyTotal: document.getElementById('monthlyTotal'),
             budgetValue: document.getElementById('budgetValue'),
-            budgetProgressFill: document.getElementById('budgetProgressFill'),
+            budgetChart: document.getElementById('budgetChart'),
+            budgetChartCenter: document.getElementById('budgetChartCenter'),
             budgetProgressText: document.getElementById('budgetProgressText'),
             budgetRemainingText: document.getElementById('budgetRemainingText'),
             weeklyChart: document.getElementById('weeklyChart'),
@@ -81,19 +82,15 @@ class ReceiptApp {
     }
 
     setupEventListeners() {
-        // 戻るボタンのパスを動的に解決
+        // 戻るボタンのクリックイベント
         const backLink = document.getElementById('backLink');
         if (backLink) {
-            // 現在のパスから相対的に解決
-            const currentPath = window.location.pathname;
-            const appPath = '/apps/receipt-ocr/';
-            if (currentPath.includes(appPath)) {
-                // アプリ内からアクセスしている場合
-                backLink.href = currentPath.replace(appPath, '/');
-            } else {
-                // それ以外の場合は相対パス
-                backLink.href = '../index.html';
-            }
+            // Smart Receiptのホーム（ダッシュボード）に戻る
+            backLink.href = '#';
+            backLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showDashboard();
+            });
         }
 
         // FABボタン
@@ -192,6 +189,12 @@ class ReceiptApp {
             this.elements.homeV2.classList.remove('active');
         }
         this.elements.editor.classList.remove('active');
+        // bodyからクラスを削除して設定ボタンを表示する
+        document.body.classList.remove('editor-active');
+        // FABボタンを表示
+        if (this.elements.fabBtn) {
+            this.elements.fabBtn.style.display = 'inline-flex';
+        }
         this.updateDashboard();
     }
 
@@ -209,6 +212,12 @@ class ReceiptApp {
             this.elements.homeV2.classList.remove('active');
         }
         this.elements.editor.classList.add('active');
+        // bodyにクラスを追加して設定ボタンを非表示にする
+        document.body.classList.add('editor-active');
+        // FABボタンを非表示
+        if (this.elements.fabBtn) {
+            this.elements.fabBtn.style.display = 'none';
+        }
         if (receipt) {
             this.loadReceiptToForm(receipt);
             this.currentReceipt = receipt;

@@ -29,19 +29,22 @@
 <body>
     <!-- ヘッダー -->
     <header class="app-header">
-        <div class="container">
-            <div class="header-content">
-                <a href="/index.html" class="back-button" id="backLink">← ポートフォリオに戻る</a>
-                <h1 class="app-title">Smart Receipt</h1>
-                <button class="settings-button" id="settingsBtn" type="button" aria-label="設定を開く">
-                    <span aria-hidden="true">⚙️</span>
-                    <span class="settings-button-label">設定</span>
-                </button>
-            </div>
+        <div class="header-content">
+            <a href="#" class="back-button" id="backLink" aria-label="ホームに戻る">
+                <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+            </a>
+            <h1 class="app-title">
+                <span class="app-title-line">Smart</span>
+                <span class="app-title-line">Receipt</span>
+            </h1>
+            <button class="settings-button" id="settingsBtn" type="button" aria-label="設定を開く">
+                <span class="material-symbols-outlined" aria-hidden="true">settings</span>
+            </button>
         </div>
     </header>
 
     <!-- メインコンテンツ -->
+    <div class="app-container">
     <main class="app-main">
         <!-- ダッシュボード画面 -->
         <section id="dashboard" class="screen active dashboard-unified">
@@ -69,11 +72,13 @@
                             </div>
                         </div>
                         <div class="summary-card__progress">
-                            <div class="summary-card__progress-bar" aria-label="予算の進捗">
-                                <div class="summary-card__progress-fill" id="budgetProgressFill"></div>
+                            <div class="summary-card__chart-wrapper">
+                                <canvas id="budgetChart"></canvas>
+                                <div class="summary-card__chart-center" id="budgetChartCenter">
+                                    <span class="summary-card__chart-percent" id="budgetProgressText">0%</span>
+                                </div>
                             </div>
                             <div class="summary-card__progress-meta">
-                                <span id="budgetProgressText">消化率 0%</span>
                                 <span id="budgetRemainingText">予算残高: ¥0</span>
                             </div>
                         </div>
@@ -111,23 +116,26 @@
         <section id="editor" class="screen">
             <div class="container">
                 <div class="editor-content">
-                    <!-- 画像プレビュー -->
-                    <div class="image-preview-section">
-                        <div class="image-preview" id="imagePreview">
-                            <p class="placeholder-text">レシート画像をアップロード</p>
+                    <!-- 左側：画像プレビュー -->
+                    <div class="editor-left">
+                        <div class="image-preview-section">
+                            <div class="image-preview" id="imagePreview">
+                                <p class="placeholder-text">レシート画像をアップロード</p>
+                            </div>
+                            <input type="file" id="imageInput" accept="image/*" capture="environment" style="display: none;">
+                            <button class="btn btn-primary" id="captureBtn">📷 カメラで撮影</button>
                         </div>
-                        <input type="file" id="imageInput" accept="image/*" capture="environment" style="display: none;">
-                        <button class="btn btn-primary" id="captureBtn">📷 カメラで撮影</button>
+
+                        <!-- OCR処理中インジケーター -->
+                        <div class="ocr-loading" id="ocrLoading" style="display: none;">
+                            <div class="spinner"></div>
+                            <p>レシートを読み取っています...</p>
+                        </div>
                     </div>
 
-                    <!-- OCR処理中インジケーター -->
-                    <div class="ocr-loading" id="ocrLoading" style="display: none;">
-                        <div class="spinner"></div>
-                        <p>レシートを読み取っています...</p>
-                    </div>
-
-                    <!-- フォーム -->
-                    <form class="receipt-form" id="receiptForm">
+                    <!-- 右側：フォーム -->
+                    <div class="editor-right">
+                        <form class="receipt-form" id="receiptForm">
                         <!-- 日付 -->
                         <div class="form-group">
                             <label for="receiptDate">日付</label>
@@ -184,11 +192,13 @@
                             <button type="button" class="btn btn-secondary" id="retakeBtn">再撮影</button>
                             <button type="submit" class="btn btn-primary">保存</button>
                         </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
             </div>
         </section>
     </main>
+    </div>
 
     <!-- FAB (Floating Action Button) -->
     <button class="fab bottom-nav-safe" id="fabBtn" aria-label="レシートを登録">

@@ -9,15 +9,17 @@
 }
 
 .receipts-container {
-    display: grid;
-    gap: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .receipt-card {
     background: white;
-    border-radius: 12px;
-    padding: 1.25rem 1.5rem;
-    box-shadow: var(--shadow);
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.02);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     display: grid;
     grid-template-columns: auto 1fr auto;
     align-items: center;
@@ -31,12 +33,16 @@
     box-shadow: var(--shadow-md);
 }
 
+.receipt-card:active {
+    transform: scale(0.98);
+}
+
 .receipt-thumb {
-    width: 80px;
-    aspect-ratio: 1 / 1;
-    border-radius: 12px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
     overflow: hidden;
-    background: var(--bg-lighter);
+    background: #f3f4f6;
     border: 1px solid var(--border-color);
     display: flex;
     align-items: center;
@@ -65,7 +71,7 @@
 }
 
 .receipt-title {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--text-color);
     white-space: nowrap;
@@ -101,10 +107,10 @@
 
 .receipt-category-badge {
     display: inline-block;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     font-weight: 600;
     padding: 0.35rem 0.75rem;
-    border-radius: 10px;
+    border-radius: 999px;
     background-color: var(--category-bg, rgba(107, 114, 128, 0.15));
     color: var(--category-color, #6b7280);
     border: 1px solid var(--category-border, rgba(107, 114, 128, 0.3));
@@ -120,10 +126,11 @@
 }
 
 .receipt-amount {
-    font-size: 1.75rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: var(--primary-color);
     white-space: nowrap;
+    text-align: right;
 }
 
 @media (max-width: 640px) {
@@ -141,7 +148,7 @@
     }
 
     .receipt-amount {
-        font-size: 1.45rem;
+        font-size: 1.1rem;
     }
 }
 
@@ -234,5 +241,21 @@
 .date-receipts-total-amount {
     font-size: 2rem;
     font-weight: 700;
+}
+
+/* 日付グループのスペーシング */
+.date-group,
+.timeline-group {
+    margin-top: 24px;
+}
+
+.date-group:first-child,
+.timeline-group:first-child {
+    margin-top: 0;
+}
+
+.date-header,
+.timeline-date-header {
+    margin-bottom: 8px;
 }
 

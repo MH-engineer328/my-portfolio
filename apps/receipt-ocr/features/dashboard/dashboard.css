@@ -92,49 +92,56 @@
 }
 
 .summary-card__progress {
-    margin-top: 12px;
+    margin-top: 16px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
+    align-items: center;
 }
 
-.summary-card__progress-bar {
+.summary-card__chart-wrapper {
     position: relative;
-    width: 100%;
-    height: 12px;
-    background: #e5e7eb;
-    border-radius: 999px;
-    overflow: hidden;
+    width: 140px;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.summary-card__progress-fill {
+.summary-card__chart-wrapper canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.summary-card__chart-center {
     position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 0%;
-    background: #3b82f6;
-    border-radius: inherit;
-    transition: width 0.3s ease, background-color 0.3s ease;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
 }
 
-.summary-card__progress-fill.is-warning {
-    background: #f59e0b;
-}
-
-.summary-card__progress-fill.is-danger {
-    background: #ef4444;
+.summary-card__chart-percent {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #0f172a;
+    line-height: 1;
 }
 
 .summary-card__progress-meta {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     color: #4b5563;
     font-weight: 600;
     font-size: 0.95rem;
     gap: 10px;
     flex-wrap: wrap;
+    text-align: center;
 }
 
 /* 週間グラフカード */
@@ -147,11 +154,12 @@
     border-radius: 16px;
     padding: 0.75rem;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 10px 30px rgba(15, 23, 42, 0.06);
+    min-height: 350px;
 }
 
 .chart-card--modern canvas {
     width: 100%;
-    height: 260px;
+    height: 350px;
 }
 
 /* タイムラインリスト */
@@ -172,28 +180,28 @@
     grid-template-columns: auto 1fr auto;
     gap: 12px;
     align-items: center;
-    padding: 0.9rem 1rem;
+    padding: 0.65rem 1rem;
     background: #fff;
-    border-radius: 14px;
+    border-radius: 12px;
     border: 1px solid #e5e7eb;
-    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .timeline-item:hover {
     transform: translateY(-1px);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 }
 
 .timeline-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
-    font-weight: 700;
+    font-size: 1.1rem;
+    flex-shrink: 0;
     color: var(--icon-color, #2563eb);
     background: var(--icon-bg, rgba(59, 130, 246, 0.12));
     border: 1px solid var(--icon-border, rgba(59, 130, 246, 0.2));
@@ -203,29 +211,30 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
 }
 
 .timeline-title {
-    font-size: 1.05rem;
-    font-weight: 800;
+    font-size: 0.95rem;
+    font-weight: 700;
     color: #0f172a;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.3;
 }
 
 .timeline-meta {
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     color: #4b5563;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.5rem;
     flex-wrap: wrap;
 }
 
 .timeline-date {
-    color: #4b5563;
+    color: #6b7280;
 }
 
 .timeline-relative {
@@ -234,7 +243,7 @@
     border: 1px solid rgba(37, 99, 235, 0.3);
     padding: 2px 8px;
     border-radius: 999px;
-    font-size: 0.82rem;
+    font-size: 0.75rem;
     line-height: 1.2;
 }
 
@@ -242,9 +251,9 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 4px 10px;
+    padding: 3px 8px;
     border-radius: 999px;
-    font-size: 0.82rem;
+    font-size: 0.75rem;
     font-weight: 600;
     background: var(--category-bg, rgba(59, 130, 246, 0.12));
     color: var(--category-color, #2563eb);
@@ -254,10 +263,11 @@
 }
 
 .timeline-amount {
-    font-size: 1.2rem;
-    font-weight: 900;
+    font-size: 1.05rem;
+    font-weight: 800;
     color: #111827;
     white-space: nowrap;
+    text-align: right;
 }
 
 .timeline-footer {
@@ -284,6 +294,7 @@
     .timeline-amount {
         grid-column: span 2;
         justify-self: flex-end;
+        margin-top: 4px;
     }
 }
 
@@ -297,8 +308,11 @@
     .summary-card__value {
         font-size: 2.2rem;
     }
+    .chart-card--modern {
+        min-height: 300px;
+    }
     .chart-card--modern canvas {
-        height: 220px;
+        height: 300px;
     }
 }
 

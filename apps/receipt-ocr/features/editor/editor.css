@@ -1,18 +1,37 @@
 /* エディタ画面 */
 .editor-content {
-    max-width: 600px;
+    max-width: 100%;
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.editor-left {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.editor-right {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
 }
 
 .image-preview-section {
-    margin-bottom: 2rem;
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: static;
 }
 
 .image-preview {
-    width: min(100%, 420px);
+    width: 100%;
+    max-width: 100%;
     aspect-ratio: 3/4;
     border: 2px dashed var(--border-color);
     border-radius: 12px;
@@ -36,8 +55,14 @@
 }
 
 #captureBtn {
-    width: min(100%, 420px);
+    width: 100%;
+    max-width: 100%;
     padding: 1rem;
     font-size: 1.1rem;
+}
+
+.ocr-loading {
+    text-align: center;
+    padding: 1rem;
 }
 
