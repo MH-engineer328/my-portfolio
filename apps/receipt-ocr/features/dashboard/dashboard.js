@@ -73,7 +73,7 @@ ReceiptApp.prototype.renderSummaryCard = function() {
     // ドーナツチャートのデータ
     const spent = Math.min(monthlyTotal, monthlyBudget);
     const remainingAmount = Math.max(0, monthlyBudget - monthlyTotal);
-    
+
     // 予算オーバー時は全体を赤にする
     const isOverBudget = monthlyTotal > monthlyBudget;
     const spentColor = isOverBudget ? '#ef4444' : '#3b82f6'; // オーバー時は赤、通常は青
@@ -81,17 +81,18 @@ ReceiptApp.prototype.renderSummaryCard = function() {
 
     // Chart.jsでドーナツチャートを描画
     const ctx = chartCanvas.getContext('2d');
-    
+
     // 既存のチャートインスタンスを破棄
     if (this.budgetChartInstance) {
         this.budgetChartInstance.destroy();
     }
 
+    // Chart.jsでドーナツチャートを描画
     this.budgetChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
             datasets: [{
-                data: isOverBudget 
+                data: isOverBudget
                     ? [monthlyBudget, monthlyTotal - monthlyBudget] // オーバー時は予算分と超過分
                     : [spent, remainingAmount], // 通常時は支出と残高
                 backgroundColor: isOverBudget
@@ -102,12 +103,18 @@ ReceiptApp.prototype.renderSummaryCard = function() {
             }]
         },
         options: {
+            // 画面サイズに応じてグラフのサイズを自動調整（スマホでもPCでも見やすい）
             responsive: true,
+            // アスペクト比を維持しない（高さを自由に設定可能）
             maintainAspectRatio: false,
             plugins: {
+                // 凡例（グラフの説明）を非表示にする
+                // 中央にテキストを表示するため、凡例は不要
                 legend: {
                     display: false
                 },
+                // マウスホバー時のツールチップを非表示にする
+                // 中央に既に情報を表示しているため、ツールチップは不要
                 tooltip: {
                     enabled: false
                 }
@@ -196,6 +203,7 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
         this.weeklyChartInstance.destroy();
     }
 
+    // 棒グラフを描画
     this.weeklyChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -467,7 +475,7 @@ ReceiptApp.prototype.createReceiptCard = function(receipt, showDeleteButton = fa
     const categoryBorderColor = hexToRgba(categoryColor, 0.3, '#6b7280');
 
     const hasImage = !!receipt.image;
-    
+
     // カテゴリアイコン用のマップ
     const iconMap = {
         food: '🛒',
@@ -488,7 +496,7 @@ ReceiptApp.prototype.createReceiptCard = function(receipt, showDeleteButton = fa
     const categoryIcon = iconMap[categoryId] || '🧾';
     const iconBg = hexToRgba(categoryColor, 0.12, '#6b7280');
     const iconBorder = hexToRgba(categoryColor, 0.28, '#6b7280');
-    
+
     const date = new Date(receipt.date);
     const dateLabel = `${date.getMonth() + 1}/${date.getDate()}`;
 
@@ -805,5 +813,122 @@ ReceiptApp.prototype.deleteReceipt = function(receiptId, receiptDate) {
     // ダッシュボードを更新
     this.updateDashboard();
 };
+
+/**
+ * 予算設定ボトムシートの初期化
+ */
+ReceiptApp.prototype.initBudgetBottomSheet = function() {
+    const editBtn = document.getElementById('budgetEditBtn');
+    const sheet = document.getElementById('budgetBottomSheet');
+    const overlay = document.getElementById('budgetSheetOverlay');
+    const closeBtn = document.getElementById('closeBudgetSheetBtn');
+    const saveBtn = document.getElementById('saveBudgetBtn');
+    const input = document.getElementById('bottomSheetWeeklyBudget');
+
+    if (!editBtn || !sheet || !overlay || !closeBtn || !saveBtn || !input) {
+        return;
+    }
+
+    // 編集ボタンクリック
+    editBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // サマリーカード全体のクリックイベントを防ぐ
+        this.showBudgetBottomSheet();
+    });
+
+    // 閉じるボタン
+    closeBtn.addEventListener('click', () => this.hideBudgetBottomSheet());
+
+    // オーバーレイクリック
+    overlay.addEventListener('click', () => this.hideBudgetBottomSheet());
+
+    // 保存ボタン
+    saveBtn.addEventListener('click', () => this.saveWeeklyBudget());
+
+    // Enterキーで保存
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            this.saveWeeklyBudget();
+        }
+    });
+};
+
+/**
+ * 予算設定ボトムシートを表示
+ */
+ReceiptApp.prototype.showBudgetBottomSheet = function() {
+    const sheet = document.getElementById('budgetBottomSheet');
+    const input = document.getElementById('bottomSheetWeeklyBudget');
+    
+    if (!sheet || !input) return;
+
+    // 現在の設定値を反映
+    const settings = this.storage.getSettings();
+    input.value = settings.weeklyBudget || 10000;
+
+    sheet.style.display = 'flex';
+    // ブラウザの描画を待ってからクラスを付与（アニメーションのため）
+    setTimeout(() => {
+        sheet.classList.add('is-visible');
+        input.focus();
+        input.select();
+    }, 10);
+};
+
+/**
+ * 予算設定ボトムシートを非表示
+ */
+ReceiptApp.prototype.hideBudgetBottomSheet = function() {
+    const sheet = document.getElementById('budgetBottomSheet');
+    if (!sheet) return;
+
+    sheet.classList.remove('is-visible');
+    // アニメーション完了後に非表示にする
+    setTimeout(() => {
+        sheet.style.display = 'none';
+    }, 300);
+};
+
+/**
+ * 週間予算を保存
+ */
+ReceiptApp.prototype.saveWeeklyBudget = function() {
+    const input = document.getElementById('bottomSheetWeeklyBudget');
+    if (!input) return;
+
+    const newBudget = parseInt(input.value) || 0;
+    if (newBudget < 0) {
+        alert('予算は0円以上で入力してください。');
+        return;
+    }
+
+    // 設定を更新して保存
+    const settings = this.storage.getSettings();
+    settings.weeklyBudget = newBudget;
+    this.storage.saveSettings(settings);
+
+    // 分類器などの設定も更新（必要に応じて）
+    if (this.classifier) {
+        this.classifier.settings = settings;
+    }
+
+    // UIを更新
+    this.updateDashboard();
+    
+    // ボトムシートを閉じる
+    this.hideBudgetBottomSheet();
+    
+    console.log('Budget updated:', newBudget);
+};
+
+// 既存メソッドをラップしてボトムシート連携を追加
+(function() {
+    const originalInit = ReceiptApp.prototype.init;
+    ReceiptApp.prototype.init = function() {
+        if (originalInit) {
+            originalInit.call(this);
+        }
+        this.initBudgetBottomSheet();
+    };
+})();
 
 

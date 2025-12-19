@@ -21,7 +21,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <!-- Chart.js -->
+    <!-- Chart.js（デザイナーやエンジニアがデータを可視化する際に利用されるライブラリ。棒グラフや折れ線グラフなど） -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <!-- Tesseract.js -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
@@ -57,6 +57,7 @@
                 </header>
 
                 <div class="dashboard-stack">
+                    <!-- 今月の支出 -->
                     <div class="dash-card summary-card summary-card--interactive" id="summaryCard" role="button" tabindex="0">
                         <div class="summary-card__head">
                             <div>
@@ -66,10 +67,11 @@
                                     <span class="summary-card__value" id="monthlyTotal">0</span>
                                 </div>
                             </div>
-                            <div class="summary-card__chip">
+                            <button class="summary-card__chip summary-card__chip--clickable" id="budgetEditBtn" type="button" aria-label="予算を設定する">
                                 <span class="summary-card__chip-label">月間予算</span>
                                 <span class="summary-card__chip-value" id="budgetValue">未設定</span>
-                            </div>
+                                <span class="material-symbols-outlined" style="font-size: 1.1rem; margin-left: 4px; opacity: 0.7;">edit</span>
+                            </button>
                         </div>
                         <div class="summary-card__progress">
                             <div class="summary-card__chart-wrapper">
@@ -84,6 +86,7 @@
                         </div>
                     </div>
 
+                    <!-- 週間支出 -->
                     <div class="dash-card weekly-card">
                         <div class="dash-card-header">
                             <div>
@@ -96,6 +99,7 @@
                         </div>
                     </div>
 
+                    <!-- レシート履歴 -->
                     <div class="dash-card timeline-card" id="recentSection">
                         <div class="dash-card-header">
                             <h2 class="dash-card-title">レシート履歴</h2>
@@ -119,9 +123,11 @@
                     <!-- 左側：画像プレビュー -->
                     <div class="editor-left">
                         <div class="image-preview-section">
+                            <!-- 画像プレビュー -->
                             <div class="image-preview" id="imagePreview">
                                 <p class="placeholder-text">レシート画像をアップロード</p>
                             </div>
+                            <!-- 画像アップロード -->
                             <input type="file" id="imageInput" accept="image/*" capture="environment" style="display: none;">
                             <button class="btn btn-primary" id="captureBtn">📷 カメラで撮影</button>
                         </div>
@@ -264,10 +270,6 @@
             <div class="modal-body">
                 <div class="settings-layout">
                     <nav class="settings-nav" id="settingsNav" aria-label="設定メニュー">
-                        <button class="settings-nav__item is-active" type="button" data-section="budget">
-                            <span class="material-symbols-outlined" aria-hidden="true">account_balance_wallet</span>
-                            <span class="settings-nav__label">予算</span>
-                        </button>
                         <button class="settings-nav__item" type="button" data-section="categories">
                             <span class="material-symbols-outlined" aria-hidden="true">category</span>
                             <span class="settings-nav__label">カテゴリ</span>
@@ -363,6 +365,28 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="cancelSettingsBtn">キャンセル</button>
                 <button class="btn btn-primary" id="saveSettingsBtn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 予算設定ボトムシート -->
+    <div id="budgetBottomSheet" class="bottom-sheet" style="display: none;">
+        <div class="bottom-sheet__overlay" id="budgetSheetOverlay"></div>
+        <div class="bottom-sheet__content">
+            <div class="bottom-sheet__handle"></div>
+            <div class="bottom-sheet__header">
+                <h2>週間予算の設定</h2>
+                <button class="bottom-sheet__close" id="closeBudgetSheetBtn" aria-label="閉じる">×</button>
+            </div>
+            <div class="bottom-sheet__body">
+                <div class="form-group">
+                    <label for="bottomSheetWeeklyBudget">週間予算（円）</label>
+                    <input type="number" id="bottomSheetWeeklyBudget" min="0" step="100" placeholder="例: 10000" />
+                    <p class="form-hint">週間の支出予算を設定します。グラフとサマリーに反映されます。</p>
+                </div>
+                <div class="bottom-sheet__actions">
+                    <button class="btn btn-primary btn-block" id="saveBudgetBtn">予算を保存する</button>
+                </div>
             </div>
         </div>
     </div>

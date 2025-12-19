@@ -1,12 +1,27 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <!-- ============================================
+        ヘッダー部分：画面には表示されないが、ブラウザに必要な情報を設定
+        ============================================ -->
+
+    <!-- 文字コードの設定（日本語を正しく表示するため） -->
     <meta charset="UTF-8">
+    <!-- レスポンシブ対応（スマホでも正しく表示されるように） -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- ブラウザのタブに表示されるタイトル -->
     <title>Portfolio | hina</title>
+
+    <!-- ============================================
+        CSSファイルの読み込み：画面の見た目（デザイン）を決める
+        ============================================ -->
+    <!-- メインのスタイルシート（レイアウト、色、サイズなど） -->
     <link rel="stylesheet" href="assets/css/styles.css">
+
+    <!-- Google Fontsの事前接続（読み込みを速くするため） -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- フォント（文字の形）の読み込み：Inter, Noto Sans JP, Space Grotesk -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -15,6 +30,8 @@
         <!-- プロジェクトスライド -->
         <div class="gallery-slides">
             <!-- プロジェクト1: Smart Receipt -->
+            <!-- script.js の querySelectorAll('.gallery-slide') で取得される -->
+            <!-- active: 現在表示中のスライドを示すクラス（JavaScriptで動的に追加/削除される） -->
             <div class="gallery-slide active" data-project="0">
                 <div class="slide-background" style="background: linear-gradient(135deg, #065f46 0%, #047857 50%, #059669 100%);"></div>
                 <div class="slide-content">
@@ -69,6 +86,7 @@
                                 </div>
                             </div>
 
+                            <!-- 通常のHTMLリンク：JavaScript不要、ブラウザが自動的にページ遷移を処理 -->
                             <a href="apps/receipt-ocr/index.html" class="project-link">
                                 <span>プロジェクトを見る</span>
                                 <span class="arrow">→</span>
@@ -127,21 +145,31 @@
             </div>
         </div>
 
-        <!-- ナビゲーション -->
+        <!-- ============================================
+         ナビゲーション：プロジェクトを切り替える操作パネル
+         JavaScript（script.js）で制御される
+         ============================================ -->
+
+        <!-- 矢印ボタン：前へ/次へ移動 -->
         <div class="gallery-nav">
+            <!-- script.js の querySelector('.nav-prev') で取得される -->
             <button class="nav-arrow nav-prev" aria-label="前のプロジェクト">←</button>
+            <!-- script.js の querySelector('.nav-next') で取得される -->
             <button class="nav-arrow nav-next" aria-label="次のプロジェクト">→</button>
         </div>
 
-        <!-- ドットナビゲーション -->
+        <!-- ドットナビゲーション：特定のプロジェクトに直接ジャンプ -->
         <div class="gallery-dots">
+            <!-- script.js の querySelectorAll('.dot') で取得される -->
+            <!-- data-index: JavaScriptでどのプロジェクトかを識別するための番号 -->
             <button class="dot active" data-index="0" aria-label="プロジェクト1"></button>
             <button class="dot" data-index="1" aria-label="プロジェクト2"></button>
             <button class="dot" data-index="2" aria-label="プロジェクト3"></button>
         </div>
 
-        <!-- プロジェクトカウンター -->
+        <!-- プロジェクトカウンター：現在位置を表示（例：01/03） -->
         <div class="gallery-counter">
+            <!-- script.js の querySelector('.current-project') で取得され、動的に更新される -->
             <span class="current-project">01</span>
             <span class="separator">/</span>
             <span class="total-projects">03</span>
@@ -150,6 +178,11 @@
         <div class="corner-accent" aria-hidden="true">✦</div>
     </div>
 
+    <!-- ============================================
+         JavaScriptファイルの読み込み：ボタンなどの動きを制御
+         ============================================ -->
+    <!-- script.js が読み込まれると、128-132行目で new ProjectGallery() が実行される -->
+    <!-- constructor() が自動的に呼ばれ、ボタンにイベントが設定される -->
     <script src="assets/js/script.js"></script>
 </body>
 </html>
