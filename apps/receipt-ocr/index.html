@@ -105,16 +105,19 @@
 
                     <!-- レシート履歴 -->
                     <div class="dash-card timeline-card" id="recentSection">
-                        <div class="dash-card-header">
-                            <h2 class="dash-card-title">レシート履歴</h2>
-                            <p class="dash-card-subtitle">直近の登録から順に表示</p>
+                        <div class="dash-card-header is-collapsible" id="recentSectionHeader">
+                            <div>
+                                <h2 class="dash-card-title">レシート履歴</h2>
+                                <p class="dash-card-subtitle">直近の登録から順に表示</p>
+                            </div>
+                            <span class="material-symbols-outlined collapse-icon">expand_more</span>
                         </div>
                         <div id="receiptsContainer" class="timeline-container">
                             <!-- 動的に生成 -->
                         </div>
                         <div class="timeline-footer">
-                            <button class="btn btn-secondary" id="openCalendarBtn" type="button">カレンダー</button>
-                            <button class="btn btn-secondary" id="openAllReceiptsBtn" type="button">すべての履歴を見る</button>
+                            <button class="btn btn-secondary" id="openCalendarBtn" type="button">カレンダー・履歴</button>
+                            <!-- <button class="btn btn-secondary" id="openAllReceiptsBtn" type="button">すべての履歴を見る</button> -->
                         </div>
                     </div>
                 </div>

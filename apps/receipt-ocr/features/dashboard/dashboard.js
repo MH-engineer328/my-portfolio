@@ -478,6 +478,26 @@ ReceiptApp.prototype.createTimelineItem = function(receipt) {
 };
 
 /**
+ * レシート履歴の折りたたみ機能を初期化
+ */
+ReceiptApp.prototype.initCollapsibleHistory = function() {
+    const header = document.getElementById('recentSectionHeader');
+    const section = document.getElementById('recentSection');
+    if (!header || !section) return;
+
+    // 初期状態を読み込み
+    const isCollapsed = localStorage.getItem('recentSectionCollapsed') === 'true';
+    if (isCollapsed) {
+        section.classList.add('is-collapsed');
+    }
+
+    header.addEventListener('click', () => {
+        const collapsed = section.classList.toggle('is-collapsed');
+        localStorage.setItem('recentSectionCollapsed', collapsed);
+    });
+};
+
+/**
  * レシートカードを作成
  */
 ReceiptApp.prototype.createReceiptCard = function(receipt, showDeleteButton = false) {
@@ -1257,6 +1277,7 @@ ReceiptApp.prototype.formatDateForStorage = function(date) {
             originalInit.call(this);
         }
         this.initBudgetBottomSheet();
+        this.initCollapsibleHistory();
     };
 })();
 

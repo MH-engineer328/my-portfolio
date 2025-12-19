@@ -312,6 +312,42 @@
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+/* 折りたたみ可能なヘッダー */
+.dash-card-header.is-collapsible {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s ease;
+    border-radius: 12px;
+    padding: 4px 8px;
+    margin: -4px -8px 8px -8px;
+}
+
+.dash-card-header.is-collapsible:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.dash-card-header.is-collapsible .collapse-icon {
+    transition: transform 0.3s ease;
+    color: #64748b;
+}
+
+/* 折りたたまれた状態のスタイル */
+.dash-card.is-collapsed .timeline-container,
+.dash-card.is-collapsed .timeline-footer,
+.dash-card.is-collapsed .dash-card-subtitle {
+    display: none;
+}
+
+.dash-card.is-collapsed .collapse-icon {
+    transform: rotate(-180deg);
+}
+
+.dash-card.is-collapsed {
+    padding-bottom: 12px;
+    gap: 0;
 }
 
 .timeline-list {
