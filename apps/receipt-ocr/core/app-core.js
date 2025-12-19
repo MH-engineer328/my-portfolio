@@ -29,6 +29,7 @@ class ReceiptApp {
             retakeBtn: document.getElementById('retakeBtn'),
             ocrLoading: document.getElementById('ocrLoading'),
             imagePreview: document.getElementById('imagePreview'),
+            editorLeft: document.querySelector('.editor-left'),
 
             // フォーム要素
             receiptDate: document.getElementById('receiptDate'),
@@ -48,18 +49,24 @@ class ReceiptApp {
             // ダッシュボード要素
             summaryCard: document.getElementById('summaryCard'),
             monthlyTotal: document.getElementById('monthlyTotal'),
-            budgetValue: document.getElementById('budgetValue'),
-            budgetChart: document.getElementById('budgetChart'),
-            budgetChartCenter: document.getElementById('budgetChartCenter'),
+            budgetProgressContainer: document.getElementById('budgetProgressContainer'),
+            budgetProgressBar: document.getElementById('budgetProgressBar'),
             budgetProgressText: document.getElementById('budgetProgressText'),
             budgetRemainingText: document.getElementById('budgetRemainingText'),
+            monthlyBudgetTotal: document.getElementById('monthlyBudgetTotal'),
             weeklyChart: document.getElementById('weeklyChart'),
             receiptsContainer: document.getElementById('receiptsContainer'),
             dashboardAddBtn: document.getElementById('dashboardAddBtn'),
             openAllReceiptsBtn: document.getElementById('openAllReceiptsBtn'),
             allReceiptsModal: document.getElementById('allReceiptsModal'),
             closeAllReceiptsBtn: document.getElementById('closeAllReceiptsBtn'),
-            allReceiptsContainer: document.getElementById('allReceiptsContainer')
+            allReceiptsContainer: document.getElementById('allReceiptsContainer'),
+
+            // 登録方法選択モーダル
+            addChoiceModal: document.getElementById('addChoiceModal'),
+            closeAddChoiceBtn: document.getElementById('closeAddChoiceBtn'),
+            choiceCameraBtn: document.getElementById('choiceCameraBtn'),
+            choiceManualBtn: document.getElementById('choiceManualBtn')
         };
 
         // 要素の存在確認
@@ -97,10 +104,44 @@ class ReceiptApp {
         if (this.elements.fabBtn) {
             this.elements.fabBtn.addEventListener('click', () => {
                 console.log('FAB button clicked');
-                this.showEditor();
+                this.showAddChoiceModal();
             });
         } else {
             console.error('FAB button not found');
+        }
+
+        // 登録方法選択モーダル
+        if (this.elements.closeAddChoiceBtn) {
+            this.elements.closeAddChoiceBtn.addEventListener('click', () => {
+                this.hideAddChoiceModal();
+            });
+        }
+
+        // 登録方法選択モーダルの背景クリックで閉じる
+        if (this.elements.addChoiceModal) {
+            const overlay = this.elements.addChoiceModal.querySelector('.modal-overlay');
+            if (overlay) {
+                overlay.addEventListener('click', () => {
+                    this.hideAddChoiceModal();
+                });
+            }
+        }
+
+        if (this.elements.choiceCameraBtn) {
+            this.elements.choiceCameraBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.hideAddChoiceModal();
+                this.showEditor();
+                this.elements.imageInput.click();
+            });
+        }
+
+        if (this.elements.choiceManualBtn) {
+            this.elements.choiceManualBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.hideAddChoiceModal();
+                this.showEditor(null, true); // 第2引数にisManualフラグ
+            });
         }
 
         // カメラボタン
@@ -119,6 +160,16 @@ class ReceiptApp {
         if (this.elements.openAllReceiptsBtn) {
             this.elements.openAllReceiptsBtn.addEventListener('click', () => {
                 this.showAllReceiptsModal();
+            });
+        }
+
+        // カレンダーボタン
+        const openCalendarBtn = document.getElementById('openCalendarBtn');
+        if (openCalendarBtn) {
+            openCalendarBtn.addEventListener('click', () => {
+                if (this.showCalendarModal) {
+                    this.showCalendarModal();
+                }
             });
         }
 
@@ -201,8 +252,9 @@ class ReceiptApp {
     /**
      * エディタを表示
      * @param {Object|null} receipt 編集対象のレシート（新規の場合は null）
+     * @param {boolean} isManual 手入力モードかどうか
      */
-    showEditor(receipt = null) {
+    showEditor(receipt = null, isManual = false) {
         if (!this.elements.dashboard || !this.elements.editor) {
             console.error('Dashboard or Editor element not found');
             return;
@@ -218,13 +270,69 @@ class ReceiptApp {
         if (this.elements.fabBtn) {
             this.elements.fabBtn.style.display = 'none';
         }
+
+        // 手入力モードまたは画像なしレシート編集時のUI調整
+        const hideImageUI = isManual || (receipt && !receipt.image);
+        if (this.elements.editorLeft) {
+            this.elements.editorLeft.style.display = hideImageUI ? 'none' : '';
+        }
+        if (this.elements.retakeBtn) {
+            this.elements.retakeBtn.style.display = hideImageUI ? 'none' : '';
+        }
+
         if (receipt) {
             this.loadReceiptToForm(receipt);
             this.currentReceipt = receipt;
+        } else if (isManual) {
+            this.initManualInput();
+            this.currentReceipt = null;
         } else {
             this.resetForm();
             this.currentReceipt = null;
         }
+    }
+
+    /**
+     * 登録方法選択モーダルを表示
+     */
+    showAddChoiceModal() {
+        if (this.elements.addChoiceModal) {
+            this.elements.addChoiceModal.style.display = 'flex';
+        }
+    }
+
+    /**
+     * 登録方法選択モーダルを非表示
+     */
+    hideAddChoiceModal() {
+        if (this.elements.addChoiceModal) {
+            this.elements.addChoiceModal.style.display = 'none';
+        }
+    }
+
+    /**
+     * 手入力モードで初期化
+     */
+    initManualInput() {
+        this.resetForm();
+
+        // 今日をデフォルトに設定
+        const today = new Date().toISOString().split('T')[0];
+        this.elements.receiptDate.value = today;
+
+        // 店名を空に
+        this.elements.merchantName.value = '';
+
+        // 金額を空に
+        this.elements.totalAmount.value = '';
+
+        // カテゴリを「その他」に
+        this.elements.category.value = 'other';
+
+        // 金額にフォーカス
+        setTimeout(() => {
+            this.elements.totalAmount.focus();
+        }, 100);
     }
 
     /**

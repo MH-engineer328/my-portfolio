@@ -44,89 +44,48 @@ ReceiptApp.prototype.renderSummaryCard = function() {
     const weeklyBudget = Number(settings.weeklyBudget) || 0;
     const monthlyBudget = weeklyBudget > 0 ? weeklyBudget * 4 : 0;
 
-    if (this.elements.budgetValue) {
-        this.elements.budgetValue.textContent = monthlyBudget > 0
-            ? `¥${monthlyBudget.toLocaleString()}`
-            : '未設定';
-    }
-
-    const chartCanvas = this.elements.budgetChart;
+    const progressBar = this.elements.budgetProgressBar;
     const progressText = this.elements.budgetProgressText;
     const remainingText = this.elements.budgetRemainingText;
-    if (!chartCanvas || !progressText || !remainingText) return;
+    const budgetTotalEl = this.elements.monthlyBudgetTotal;
+    const progressContainer = this.elements.budgetProgressContainer;
+
+    if (!progressBar || !progressText || !remainingText) return;
+
+    if (budgetTotalEl) {
+        budgetTotalEl.textContent = `¥${monthlyBudget.toLocaleString()}`;
+    }
 
     if (monthlyBudget <= 0) {
-        // 予算未設定時はチャートを非表示にするか、空のチャートを表示
-        if (this.budgetChartInstance) {
-            this.budgetChartInstance.destroy();
-            this.budgetChartInstance = null;
-        }
-        progressText.textContent = '未設定';
-        remainingText.textContent = '設定で週間予算を登録してください';
+        progressBar.style.width = '0%';
+        progressText.textContent = '0%';
+        remainingText.textContent = '予算を設定してください';
+        if (progressContainer) progressContainer.classList.remove('is-over');
         return;
     }
 
-    const ratio = monthlyTotal / monthlyBudget;
-    const percent = Math.min(Math.round(ratio * 100), 200);
     const remaining = monthlyBudget - monthlyTotal;
+    const spentRatio = monthlyTotal / monthlyBudget;
+    const displayRatio = Math.min(spentRatio, 1); // バーは100%で止める
 
-    // ドーナツチャートのデータ
-    const spent = Math.min(monthlyTotal, monthlyBudget);
-    const remainingAmount = Math.max(0, monthlyBudget - monthlyTotal);
+    // バーの幅を支出割合に設定
+    progressBar.style.width = `${displayRatio * 100}%`;
 
-    // 予算オーバー時は全体を赤にする
-    const isOverBudget = monthlyTotal > monthlyBudget;
-    const spentColor = isOverBudget ? '#ef4444' : '#3b82f6'; // オーバー時は赤、通常は青
-    const remainingColor = '#e5e7eb'; // 残高は薄いグレー
-
-    // Chart.jsでドーナツチャートを描画
-    const ctx = chartCanvas.getContext('2d');
-
-    // 既存のチャートインスタンスを破棄
-    if (this.budgetChartInstance) {
-        this.budgetChartInstance.destroy();
+    // 予算オーバー時のスタイル制御
+    if (monthlyTotal > monthlyBudget) {
+        if (progressContainer) progressContainer.classList.add('is-over');
+        remainingText.parentElement.classList.add('is-over');
+    } else {
+        if (progressContainer) progressContainer.classList.remove('is-over');
+        remainingText.parentElement.classList.remove('is-over');
     }
 
-    // Chart.jsでドーナツチャートを描画
-    this.budgetChartInstance = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            datasets: [{
-                data: isOverBudget
-                    ? [monthlyBudget, monthlyTotal - monthlyBudget] // オーバー時は予算分と超過分
-                    : [spent, remainingAmount], // 通常時は支出と残高
-                backgroundColor: isOverBudget
-                    ? [spentColor, '#dc2626'] // オーバー時は両方赤系
-                    : [spentColor, remainingColor],
-                borderWidth: 0,
-                cutout: '75%' // ドーナツの内径（75%で中央にスペース）
-            }]
-        },
-        options: {
-            // 画面サイズに応じてグラフのサイズを自動調整（スマホでもPCでも見やすい）
-            responsive: true,
-            // アスペクト比を維持しない（高さを自由に設定可能）
-            maintainAspectRatio: false,
-            plugins: {
-                // 凡例（グラフの説明）を非表示にする
-                // 中央にテキストを表示するため、凡例は不要
-                legend: {
-                    display: false
-                },
-                // マウスホバー時のツールチップを非表示にする
-                // 中央に既に情報を表示しているため、ツールチップは不要
-                tooltip: {
-                    enabled: false
-                }
-            }
-        }
-    });
+    // テキスト表示を更新
+    progressText.textContent = `${Math.round(spentRatio * 100)}%`;
 
-    // 中央のテキストを更新
-    progressText.textContent = `${percent}%`;
-    remainingText.textContent = remaining >= 0
-        ? `予算残高: ¥${remaining.toLocaleString()}`
-        : `予算超過: ¥${Math.abs(remaining).toLocaleString()}`;
+    remainingText.innerHTML = remaining >= 0
+        ? `あと <b>¥ ${remaining.toLocaleString()}</b> 使えます`
+        : `予算超過: <b>¥ ${Math.abs(remaining).toLocaleString()}</b>`;
 };
 
 /**
@@ -206,6 +165,41 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
     // 棒グラフを描画
     this.weeklyChartInstance = new Chart(ctx, {
         type: 'bar',
+        plugins: [{
+            id: 'topLabels',
+            afterDatasetsDraw(chart) {
+                const { ctx, scales: { x, y } } = chart;
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.fillStyle = '#555';
+
+                const meta = chart.getDatasetMeta(0);
+                const datasetCount = chart.data.datasets.length;
+
+                // 各曜日の合計値を計算
+                const totals = new Array(chart.data.labels.length).fill(0);
+                chart.data.datasets.forEach(dataset => {
+                    if (dataset.type === 'line') return; // 予算ラインは除外
+                    dataset.data.forEach((value, i) => {
+                        totals[i] += (value || 0);
+                    });
+                });
+
+                // 合計値が0より大きい場合のみ、一番高いバーの上にラベルを描画
+                totals.forEach((total, i) => {
+                    if (total > 0) {
+                        // 積み上げの最上部の位置を探す
+                        let topY = y.getPixelForValue(total);
+                        const xPos = x.getPixelForTick(i);
+
+                        ctx.fillText(`¥${total.toLocaleString()}`, xPos, topY - 5);
+                    }
+                });
+                ctx.restore();
+            }
+        }],
         data: {
             labels: dayLabels,
             datasets: [
@@ -230,7 +224,7 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
             maintainAspectRatio: false,
             layout: {
                 padding: {
-                    top: 8,
+                    top: 20, // ラベル表示スペース確保のため少し広げる
                     right: 12,
                     left: 8,
                     bottom: 12
@@ -241,7 +235,7 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
                     borderRadius: 4
                 }
             },
-            barPercentage: 0.65,
+            barPercentage: 0.7,
             interaction: {
                 mode: 'index',
                 intersect: false
@@ -266,9 +260,6 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
                         label: function(context) {
                             const datasetLabel = context.dataset.label || '';
                             const amount = context.parsed.y || 0;
-                            if (context.dataset.type === 'line') {
-                                return `${datasetLabel}: ¥${amount.toLocaleString()}`;
-                            }
                             return `${datasetLabel}: ¥${amount.toLocaleString()}`;
                         }
                     }
@@ -295,13 +286,14 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
                         maxTicksLimit: 5
                     },
                     grid: {
+                        borderDash: [2, 2],
                         color: function(context) {
-                            if (!weeklyBudget) return '#f3f4f6';
+                            if (!weeklyBudget) return '#e5e7eb';
                             const dailyBudget = weeklyBudget / 7;
                             if (Math.abs(context.tick.value - dailyBudget) < 10) {
                                 return '#f59e0b';
                             }
-                            return '#f3f4f6';
+                            return '#e5e7eb';
                         }
                     },
                     border: {
@@ -354,9 +346,14 @@ ReceiptApp.prototype.renderRecentReceipts = function() {
         if (!d) return map;
         const key = formatKey(d);
         if (!map.has(key)) {
-            map.set(key, []);
+            map.set(key, {
+                receipts: [],
+                dailyTotal: 0
+            });
         }
-        map.get(key).push(receipt);
+        const data = map.get(key);
+        data.receipts.push(receipt);
+        data.dailyTotal += (receipt.totalAmount || 0);
         return map;
     }, new Map());
 
@@ -365,58 +362,86 @@ ReceiptApp.prototype.renderRecentReceipts = function() {
     const dateKeys = Array.from(grouped.keys()).sort((a, b) => b - a);
     const fragment = document.createDocumentFragment();
 
-    dateKeys.forEach((dateKey) => {
+    dateKeys.forEach((dateKey, index) => {
+        const data = grouped.get(dateKey);
+        const dateObj = new Date(Number(dateKey));
+        const isLatest = index === 0;
+
         const group = document.createElement('div');
-        group.className = 'timeline-group';
+        group.className = `timeline-group accordion ${isLatest ? 'is-expanded' : ''}`;
 
         const header = document.createElement('div');
-        header.className = 'timeline-date-header';
+        header.className = 'timeline-date-header accordion-toggle';
 
-        const dateObj = new Date(Number(dateKey));
         const labelBase = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+        const dayOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dateObj.getDay()];
         const labelText = isSameDay(dateObj, today)
-            ? `今日 (${labelBase})`
+            ? `今日 (${labelBase} ${dayOfWeek})`
             : isYesterday(dateObj)
-                ? `昨日 (${labelBase})`
-                : labelBase;
+                ? `昨日 (${labelBase} ${dayOfWeek})`
+                : `${labelBase} ${dayOfWeek}`;
 
         header.innerHTML = `
-            <span class="timeline-date-label ${isSameDay(dateObj, today) ? 'is-today' : ''}">${labelText}</span>
+            <div class="timeline-date-info">
+                <span class="timeline-date-label ${isSameDay(dateObj, today) ? 'is-today' : ''}">${labelText}</span>
+            </div>
+            <div class="timeline-date-summary">
+                <span class="timeline-daily-total">¥${data.dailyTotal.toLocaleString()}</span>
+                <span class="accordion-icon">▼</span>
+            </div>
         `;
 
         const itemsWrapper = document.createElement('div');
-        itemsWrapper.className = 'timeline-items';
+        itemsWrapper.className = 'timeline-items accordion-content';
 
-        grouped.get(dateKey).forEach((receipt) => {
+        // 最新の日付以外は初期状態で高さを0にする（CSSで制御するがJSでも初期状態を設定）
+        if (!isLatest) {
+            itemsWrapper.style.maxHeight = '0px';
+        }
+
+        data.receipts.forEach((receipt) => {
             const item = this.createTimelineItem(receipt);
             itemsWrapper.appendChild(item);
+        });
+
+        header.addEventListener('click', () => {
+            const isExpanded = group.classList.toggle('is-expanded');
+            if (isExpanded) {
+                itemsWrapper.style.maxHeight = itemsWrapper.scrollHeight + 'px';
+            } else {
+                itemsWrapper.style.maxHeight = '0px';
+            }
         });
 
         group.appendChild(header);
         group.appendChild(itemsWrapper);
         fragment.appendChild(group);
+
+        // 描画後に高さを正しく設定するための調整（最新分）
+        if (isLatest) {
+            setTimeout(() => {
+                itemsWrapper.style.maxHeight = itemsWrapper.scrollHeight + 'px';
+            }, 0);
+        }
     });
 
     this.elements.receiptsContainer.appendChild(fragment);
 };
 
 /**
- * タイムライン用のレシート行を生成
+ * タイムライン用のレシート行を生成（コンパクト版）
  */
 ReceiptApp.prototype.createTimelineItem = function(receipt) {
     const item = document.createElement('div');
-    item.className = 'timeline-item';
+    item.className = 'timeline-item is-compact';
     item.dataset.receiptId = receipt.id;
 
     const settings = this.storage.getSettings() || {};
     const categorySetting = findCategorySetting(settings, receipt.category?.id);
     const categoryColor = categorySetting?.color || '#3b82f6';
     const categoryId = receipt.category?.id || categorySetting?.id;
-    const categoryName = receipt.category?.name || categorySetting?.name || 'その他';
-    const iconBg = hexToRgba(categoryColor, 0.12, '#3b82f6');
-    const iconBorder = hexToRgba(categoryColor, 0.28, '#3b82f6');
-    const categoryBgColor = hexToRgba(categoryColor, 0.16, '#3b82f6');
-    const categoryBorderColor = hexToRgba(categoryColor, 0.32, '#3b82f6');
+    const iconBg = hexToRgba(categoryColor, 0.1, '#3b82f6');
+    const iconBorder = hexToRgba(categoryColor, 0.2, '#3b82f6');
 
     const iconMap = {
         food: '🛒',
@@ -434,26 +459,19 @@ ReceiptApp.prototype.createTimelineItem = function(receipt) {
         other: '🧾'
     };
     const icon = iconMap[categoryId] || '🧾';
-    const date = new Date(receipt.date);
-    const dateLabel = `${date.getMonth() + 1}/${date.getDate()}`;
 
     item.innerHTML = `
-        <div class="timeline-icon" style="color:${categoryColor}; background:${iconBg}; border:1px solid ${iconBorder};">
+        <div class="timeline-icon" style="color:${categoryColor}; background:${iconBg}; border:1px solid ${iconBorder}; width: 32px; height: 32px; font-size: 0.9rem;">
             ${icon}
         </div>
         <div class="timeline-body">
-            <div class="timeline-title">${receipt.merchant?.name || '不明な店舗'}</div>
-            <div class="timeline-meta">
-                <span class="timeline-date">${dateLabel}</span>
-                <span class="timeline-category-badge" style="background:${categoryBgColor}; color:${categoryColor}; border:1px solid ${categoryBorderColor};">${categoryName}</span>
-            </div>
+            <div class="timeline-title" style="font-size: 0.9rem;">${receipt.merchant?.name || '不明な店舗'}</div>
         </div>
-        <div class="timeline-amount">¥${(receipt.totalAmount || 0).toLocaleString()}</div>
+        <div class="timeline-amount" style="font-size: 0.95rem;">¥${(receipt.totalAmount || 0).toLocaleString()}</div>
     `;
 
     item.addEventListener('click', () => {
         console.log('Receipt clicked:', receipt.id);
-        // 将来的に詳細表示を追加予定
     });
 
     return item;
@@ -858,7 +876,7 @@ ReceiptApp.prototype.initBudgetBottomSheet = function() {
 ReceiptApp.prototype.showBudgetBottomSheet = function() {
     const sheet = document.getElementById('budgetBottomSheet');
     const input = document.getElementById('bottomSheetWeeklyBudget');
-    
+
     if (!sheet || !input) return;
 
     // 現在の設定値を反映
@@ -913,11 +931,322 @@ ReceiptApp.prototype.saveWeeklyBudget = function() {
 
     // UIを更新
     this.updateDashboard();
-    
+
     // ボトムシートを閉じる
     this.hideBudgetBottomSheet();
-    
+
     console.log('Budget updated:', newBudget);
+};
+
+/**
+ * カレンダーモーダルを表示
+ */
+ReceiptApp.prototype.showCalendarModal = function() {
+    const modal = document.getElementById('calendarModal');
+    if (!modal) {
+        console.error('Calendar modal not found');
+        return;
+    }
+
+    // 現在の日付でカレンダーを初期化
+    this.calendarCurrentMonth = new Date();
+    this.calendarSelectedDate = null;
+    this.renderCalendar();
+
+    modal.style.display = 'flex';
+
+    // イベントリスナーは初回のみ登録（重複防止）
+    if (!this.calendarModalInitialized) {
+        const closeBtn = document.getElementById('closeCalendarBtn');
+        const prevBtn = document.getElementById('calendarPrevBtn');
+        const nextBtn = document.getElementById('calendarNextBtn');
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.hideCalendarModal();
+            });
+        }
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                this.calendarCurrentMonth.setMonth(this.calendarCurrentMonth.getMonth() - 1);
+                this.renderCalendar();
+            });
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                this.calendarCurrentMonth.setMonth(this.calendarCurrentMonth.getMonth() + 1);
+                this.renderCalendar();
+            });
+        }
+
+        // 背景クリックで閉じる
+        const overlay = modal.querySelector('.modal-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    this.hideCalendarModal();
+                }
+            });
+        }
+
+        this.calendarModalInitialized = true;
+    }
+
+    // ESCキーで閉じる
+    const escHandler = (e) => {
+        if (e.key === 'Escape' && modal.style.display === 'flex') {
+            this.hideCalendarModal();
+        }
+    };
+    if (this.calendarModalEscHandler) {
+        document.removeEventListener('keydown', this.calendarModalEscHandler);
+    }
+    this.calendarModalEscHandler = escHandler;
+    document.addEventListener('keydown', escHandler);
+};
+
+/**
+ * カレンダーモーダルを非表示
+ */
+ReceiptApp.prototype.hideCalendarModal = function() {
+    const modal = document.getElementById('calendarModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    // 詳細セクションを非表示
+    const details = document.getElementById('calendarDetails');
+    if (details) {
+        details.style.display = 'none';
+    }
+    // ESCキーのイベントリスナーを削除
+    if (this.calendarModalEscHandler) {
+        document.removeEventListener('keydown', this.calendarModalEscHandler);
+        this.calendarModalEscHandler = null;
+    }
+};
+
+/**
+ * カレンダーを描画
+ */
+ReceiptApp.prototype.renderCalendar = function() {
+    const grid = document.getElementById('calendarGrid');
+    const monthLabel = document.getElementById('calendarMonth');
+    if (!grid || !monthLabel) {
+        console.error('Calendar elements not found');
+        return;
+    }
+
+    const year = this.calendarCurrentMonth.getFullYear();
+    const month = this.calendarCurrentMonth.getMonth();
+
+    // 月ラベルを更新
+    monthLabel.textContent = `${year}年${month + 1}月`;
+
+    // すべてのレシートを取得して日付別に集計
+    const receipts = this.storage.getAllReceipts() || [];
+    const dailyTotals = new Map();
+
+    receipts.forEach(receipt => {
+        if (!receipt.date) return;
+        const dateStr = receipt.date; // YYYY-MM-DD形式
+        const amount = receipt.totalAmount || 0;
+        if (dailyTotals.has(dateStr)) {
+            dailyTotals.set(dateStr, dailyTotals.get(dateStr) + amount);
+        } else {
+            dailyTotals.set(dateStr, amount);
+        }
+    });
+
+    // カレンダーグリッドをクリア
+    grid.innerHTML = '';
+
+    // 曜日ヘッダー
+    const dayHeaders = ['日', '月', '火', '水', '木', '金', '土'];
+    dayHeaders.forEach(day => {
+        const header = document.createElement('div');
+        header.className = 'calendar-day-header';
+        header.textContent = day;
+        grid.appendChild(header);
+    });
+
+    // 月の最初の日と最後の日を取得
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const firstDayOfWeek = firstDay.getDay(); // 0=日曜日
+    const daysInMonth = lastDay.getDate();
+
+    // 前月の最後の日を取得（前月の日付を表示するため）
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+
+    // 前月の日付を表示
+    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+        const day = prevMonthLastDay - i;
+        const dateStr = this.formatDateForStorage(new Date(year, month - 1, day));
+        const dayEl = this.createCalendarDay(day, true, dailyTotals.get(dateStr) || 0, dateStr);
+        grid.appendChild(dayEl);
+    }
+
+    // 今月の日付を表示
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = this.formatDateForStorage(new Date(year, month, day));
+        const isSelected = this.calendarSelectedDate === dateStr;
+        const dayEl = this.createCalendarDay(day, false, dailyTotals.get(dateStr) || 0, dateStr, isSelected);
+        grid.appendChild(dayEl);
+    }
+
+    // 次月の日付を表示（グリッドを埋めるため）
+    const totalCells = grid.children.length;
+    const remainingCells = 42 - totalCells; // 6週間分（7列×6行）
+    for (let day = 1; day <= remainingCells; day++) {
+        const dateStr = this.formatDateForStorage(new Date(year, month + 1, day));
+        const dayEl = this.createCalendarDay(day, true, dailyTotals.get(dateStr) || 0, dateStr);
+        grid.appendChild(dayEl);
+    }
+};
+
+/**
+ * カレンダーの日付セルを作成
+ */
+ReceiptApp.prototype.createCalendarDay = function(dayNumber, isOtherMonth, amount, dateStr, isSelected = false) {
+    const day = document.createElement('div');
+    day.className = 'calendar-day';
+    if (isOtherMonth) {
+        day.classList.add('other-month');
+    }
+    if (isSelected) {
+        day.classList.add('selected');
+    }
+    day.dataset.date = dateStr;
+
+    const numberEl = document.createElement('div');
+    numberEl.className = 'calendar-day-number';
+    numberEl.textContent = dayNumber;
+    day.appendChild(numberEl);
+
+    if (amount > 0) {
+        const amountEl = document.createElement('div');
+        amountEl.className = 'calendar-day-amount';
+        amountEl.textContent = `¥${amount.toLocaleString()}`;
+        day.appendChild(amountEl);
+    }
+
+    // クリックイベント
+    day.addEventListener('click', () => {
+        this.selectCalendarDate(dateStr);
+    });
+
+    return day;
+};
+
+/**
+ * カレンダーで日付を選択
+ */
+ReceiptApp.prototype.selectCalendarDate = function(dateStr) {
+    // 選択状態を更新
+    this.calendarSelectedDate = dateStr;
+
+    // すべての日付セルの選択状態を更新
+    const allDays = document.querySelectorAll('.calendar-day');
+    allDays.forEach(day => {
+        day.classList.remove('selected');
+        if (day.dataset.date === dateStr) {
+            day.classList.add('selected');
+        }
+    });
+
+    // その日のレシートを取得
+    const receipts = this.storage.getReceiptsByDate(dateStr);
+
+    // 詳細セクションを表示
+    const details = document.getElementById('calendarDetails');
+    const detailsDate = document.getElementById('calendarDetailsDate');
+    const detailsList = document.getElementById('calendarDetailsList');
+
+    if (!details || !detailsDate || !detailsList) {
+        console.error('Calendar details elements not found');
+        return;
+    }
+
+    // 日付ラベルを更新
+    const date = new Date(dateStr);
+    detailsDate.textContent = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+
+    // レシートリストを更新
+    detailsList.innerHTML = '';
+
+    if (receipts.length === 0) {
+        const emptyMsg = document.createElement('p');
+        emptyMsg.style.textAlign = 'center';
+        emptyMsg.style.color = 'var(--text-secondary, #6b7280)';
+        emptyMsg.style.padding = '2rem 0';
+        emptyMsg.textContent = 'この日のレシートはありません';
+        detailsList.appendChild(emptyMsg);
+    } else {
+        // 合計金額を計算
+        const totalAmount = receipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+
+        // レシートアイテムを表示
+        receipts.forEach(receipt => {
+            const item = this.createCalendarDetailItem(receipt);
+            detailsList.appendChild(item);
+        });
+
+        // 合計を表示
+        const totalEl = document.createElement('div');
+        totalEl.className = 'calendar-details-total';
+        totalEl.innerHTML = `
+            <span class="calendar-details-total-label">合計</span>
+            <span class="calendar-details-total-amount">¥${totalAmount.toLocaleString()}</span>
+        `;
+        detailsList.appendChild(totalEl);
+    }
+
+    // 詳細セクションを表示
+    details.style.display = 'block';
+
+    // スクロールして詳細セクションが見えるようにする
+    setTimeout(() => {
+        details.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+};
+
+/**
+ * カレンダー詳細用のレシートアイテムを作成
+ */
+ReceiptApp.prototype.createCalendarDetailItem = function(receipt) {
+    const item = document.createElement('div');
+    item.className = 'calendar-details-item';
+
+    const settings = this.storage.getSettings() || {};
+    const categorySetting = findCategorySetting(settings, receipt.category?.id);
+    const categoryName = receipt.category?.name || categorySetting?.name || '未分類';
+
+    item.innerHTML = `
+        <div class="calendar-details-item-info">
+            <div class="calendar-details-item-merchant">${receipt.merchant?.name || '不明な店舗'}</div>
+            <div class="calendar-details-item-category">${categoryName}</div>
+        </div>
+        <div class="calendar-details-item-amount">¥${(receipt.totalAmount || 0).toLocaleString()}</div>
+    `;
+
+    // クリックで詳細モーダルを表示（既存の機能を活用）
+    item.addEventListener('click', () => {
+        this.showDateReceiptsModal(receipt.date);
+    });
+
+    return item;
+};
+
+/**
+ * 日付をYYYY-MM-DD形式にフォーマット
+ */
+ReceiptApp.prototype.formatDateForStorage = function(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 };
 
 // 既存メソッドをラップしてボトムシート連携を追加

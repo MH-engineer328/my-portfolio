@@ -105,7 +105,7 @@ ReceiptApp.prototype.updateFieldStatus = function(fieldName, confidence) {
  */
 ReceiptApp.prototype.saveReceipt = function() {
     const receipt = {
-        ...this.currentReceipt,
+        ...(this.currentReceipt || {}),
         date: this.elements.receiptDate.value,
         merchant: {
             name: this.elements.merchantName.value,

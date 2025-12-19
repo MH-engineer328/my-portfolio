@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="core/layout.css">
     <link rel="stylesheet" href="features/dashboard/receipt-list.css">
     <link rel="stylesheet" href="features/dashboard/dashboard.css">
+    <link rel="stylesheet" href="features/dashboard/calendar.css">
     <link rel="stylesheet" href="features/editor/editor.css">
     <link rel="stylesheet" href="features/editor/form.css">
     <link rel="stylesheet" href="components/loading.css">
@@ -57,32 +58,35 @@
                 </header>
 
                 <div class="dashboard-stack">
-                    <!-- 今月の支出 -->
-                    <div class="dash-card summary-card summary-card--interactive" id="summaryCard" role="button" tabindex="0">
-                        <div class="summary-card__head">
-                            <div>
-                                <p class="summary-card__label">今月の支出</p>
+                    <div class="dash-card summary-card" id="summaryCard">
+                        <div class="summary-card__header">
+                            <p class="summary-card__label">今月の支出</p>
+                            <div class="summary-card__amount-row">
                                 <div class="summary-card__amount">
                                     <span class="summary-card__currency">¥</span>
                                     <span class="summary-card__value" id="monthlyTotal">0</span>
                                 </div>
-                            </div>
-                            <button class="summary-card__chip summary-card__chip--clickable" id="budgetEditBtn" type="button" aria-label="予算を設定する">
-                                <span class="summary-card__chip-label">月間予算</span>
-                                <span class="summary-card__chip-value" id="budgetValue">未設定</span>
-                                <span class="material-symbols-outlined" style="font-size: 1.1rem; margin-left: 4px; opacity: 0.7;">edit</span>
-                            </button>
-                        </div>
-                        <div class="summary-card__progress">
-                            <div class="summary-card__chart-wrapper">
-                                <canvas id="budgetChart"></canvas>
-                                <div class="summary-card__chart-center" id="budgetChartCenter">
-                                    <span class="summary-card__chart-percent" id="budgetProgressText">0%</span>
+                                <div class="summary-card__balance" id="budgetBalance">
+                                    <span id="budgetRemainingText">あと ¥0 使えます</span>
                                 </div>
                             </div>
-                            <div class="summary-card__progress-meta">
-                                <span id="budgetRemainingText">予算残高: ¥0</span>
+                        </div>
+
+                        <div class="summary-card__body">
+                            <div class="summary-card__progress-wrapper">
+                                <div class="summary-card__progress-container" id="budgetProgressContainer">
+                                    <div class="summary-card__progress-bar" id="budgetProgressBar"></div>
+                                </div>
+                                <span class="summary-card__progress-percent" id="budgetProgressText">0%</span>
                             </div>
+                        </div>
+
+                        <div class="summary-card__footer">
+                            <button class="summary-card__settings-btn" id="budgetEditBtn" type="button" aria-label="予算を設定する">
+                                <span class="material-symbols-outlined" aria-hidden="true">payments</span>
+                                <span class="summary-card__budget-label">予算目標: <span id="monthlyBudgetTotal">¥0</span></span>
+                                <span class="material-symbols-outlined edit-icon" aria-hidden="true">edit</span>
+                            </button>
                         </div>
                     </div>
 
@@ -109,6 +113,7 @@
                             <!-- 動的に生成 -->
                         </div>
                         <div class="timeline-footer">
+                            <button class="btn btn-secondary" id="openCalendarBtn" type="button">カレンダー</button>
                             <button class="btn btn-secondary" id="openAllReceiptsBtn" type="button">すべての履歴を見る</button>
                         </div>
                     </div>
@@ -244,6 +249,41 @@
         </div>
     </div>
 
+    <!-- カレンダーモーダル -->
+    <div id="calendarModal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content calendar-modal">
+            <div class="modal-header">
+                <h2>カレンダー</h2>
+                <button class="modal-close" id="closeCalendarBtn" aria-label="閉じる">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="calendar-card">
+                    <div class="calendar-header">
+                        <button class="calendar-nav" id="calendarPrevBtn" type="button" aria-label="先月">
+                            <span class="material-symbols-outlined">chevron_left</span>
+                        </button>
+                        <div id="calendarMonth" class="calendar-month-label"></div>
+                        <button class="calendar-nav" id="calendarNextBtn" type="button" aria-label="来月">
+                            <span class="material-symbols-outlined">chevron_right</span>
+                        </button>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- 動的に生成 -->
+                    </div>
+                </div>
+                <div class="calendar-details" id="calendarDetails" style="display: none;">
+                    <div class="calendar-details-header">
+                        <h3 id="calendarDetailsDate"></h3>
+                    </div>
+                    <div class="calendar-details-list" id="calendarDetailsList">
+                        <!-- 動的に生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 画像プレビュー用モーダル -->
     <div id="imagePreviewModal" class="modal" style="display: none;">
         <div class="modal-overlay"></div>
@@ -254,6 +294,35 @@
             </div>
             <div class="modal-body">
                 <img id="imagePreviewModalImg" alt="レシート画像プレビュー" />
+            </div>
+        </div>
+    </div>
+
+    <!-- 登録方法選択モーダル -->
+    <div id="addChoiceModal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content choice-modal">
+            <div class="modal-header">
+                <h2>レシート登録</h2>
+                <button class="modal-close" id="closeAddChoiceBtn" aria-label="閉じる">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="choice-list">
+                    <button class="choice-item" id="choiceCameraBtn">
+                        <div class="choice-icon">📷</div>
+                        <div class="choice-info">
+                            <div class="choice-title">レシートを撮影</div>
+                            <div class="choice-desc">カメラで撮影して自動入力</div>
+                        </div>
+                    </button>
+                    <button class="choice-item" id="choiceManualBtn">
+                        <div class="choice-icon">✏️</div>
+                        <div class="choice-info">
+                            <div class="choice-title">手入力で作成</div>
+                            <div class="choice-desc">金額や店名を直接入力</div>
+                        </div>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -270,13 +339,13 @@
             <div class="modal-body">
                 <div class="settings-layout">
                     <nav class="settings-nav" id="settingsNav" aria-label="設定メニュー">
+                        <button class="settings-nav__item" type="button" data-section="budget">
+                            <span class="material-symbols-outlined" aria-hidden="true">payments</span>
+                            <span class="settings-nav__label">予算</span>
+                        </button>
                         <button class="settings-nav__item" type="button" data-section="categories">
                             <span class="material-symbols-outlined" aria-hidden="true">category</span>
-                            <span class="settings-nav__label">カテゴリ</span>
-                        </button>
-                        <button class="settings-nav__item" type="button" data-section="keywords">
-                            <span class="material-symbols-outlined" aria-hidden="true">sell</span>
-                            <span class="settings-nav__label">キーワード</span>
+                            <span class="settings-nav__label">カテゴリ一覧</span>
                         </button>
                         <button class="settings-nav__item" type="button" data-section="data">
                             <span class="material-symbols-outlined" aria-hidden="true">database</span>
@@ -300,27 +369,9 @@
                         <!-- カテゴリ管理セクション -->
                         <section class="settings-panel" data-section="categories">
                             <div class="settings-section">
-                                <h3>カテゴリ管理</h3>
+                                <h3>カテゴリ一覧</h3>
+                                <p class="form-hint category-hint">現在使用可能なカテゴリです。カテゴリの追加や変更はできません。</p>
                                 <div id="categoriesList" class="category-list categories-list">
-                                    <!-- 動的に生成 -->
-                                </div>
-                                <div class="category-actions-bar">
-                                    <button class="btn btn-secondary" id="addCategoryBtn">+ カテゴリを追加</button>
-                                    <button class="btn btn-secondary" id="resetCategoriesBtn">初期設定にリセット</button>
-                                </div>
-                            </div>
-                        </section>
-
-                        <!-- キーワード設定セクション -->
-                        <section class="settings-panel" data-section="keywords">
-                            <div class="settings-section">
-                                <h3>キーワード設定</h3>
-                                <p class="form-hint">カテゴリを選択して、キーワードを編集します。</p>
-                                <div class="keyword-category-filter">
-                                    <label for="keywordCategorySelect">カテゴリを選択</label>
-                                    <select id="keywordCategorySelect"></select>
-                                </div>
-                                <div id="keywordsList" class="keywords-list">
                                     <!-- 動的に生成 -->
                                 </div>
                             </div>
@@ -348,7 +399,13 @@
                                 <p class="form-hint" id="geminiApiKeyStatus"></p>
 
                                 <h3>データ管理</h3>
-                                <p class="form-hint">バックアップやエクスポート機能は今後追加予定です。</p>
+                                <p class="form-hint">アプリ内のデータを整理・リセットします。</p>
+                                <div class="data-management-actions">
+                                    <button class="btn btn-secondary btn-sm" id="clearLearningDataBtn">
+                                        <span class="material-symbols-outlined" aria-hidden="true">psychology_alt</span>
+                                        店舗の学習データを消去
+                                    </button>
+                                </div>
                                 <div class="data-management-placeholder">
                                     <span class="material-symbols-outlined" aria-hidden="true">inventory_2</span>
                                     <div>

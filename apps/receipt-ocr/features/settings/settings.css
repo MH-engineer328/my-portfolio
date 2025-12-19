@@ -153,6 +153,34 @@
     box-sizing: border-box;
 }
 
+.category-item--static {
+    cursor: default;
+    border: 1px solid #f1f5f9;
+    background: #fff;
+    padding: 0.75rem 1rem;
+}
+
+.category-item--static:hover {
+    background: #fff;
+}
+
+.category-icon-display {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.category-name-display {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
 .category-item:last-child {
     border-bottom: none;
 }
@@ -826,6 +854,39 @@ html {
         min-height: auto; /* スマホでは固定高さを削除 */
     }
 
+    /* カテゴリ一覧をタイル状にしてコンパクトにする */
+    .categories-list {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .category-item--static {
+        padding: 0.6rem 0.5rem !important;
+        flex-direction: column !important;
+        text-align: center;
+        gap: 0.25rem !important;
+        border-radius: 12px !important;
+    }
+
+    .category-icon-display {
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 1.1rem !important;
+    }
+
+    .category-name-display {
+        font-size: 0.8rem !important;
+    }
+
+    .category-hint {
+        display: none; /* スマホでは説明文を非表示にしてスペースを確保 */
+    }
+
+    .settings-section h3 {
+        margin-bottom: 0.6rem !important;
+    }
+
     .settings-nav {
         flex-direction: row;
         gap: 0.5rem;
@@ -838,9 +899,11 @@ html {
     }
 
     .settings-nav__item {
-        min-width: 120px;
+        min-width: 100px; /* 少し小さくして収まりを良くする */
         justify-content: center;
         text-align: center;
+        padding: 0.6rem 0.5rem;
+        flex: 1; /* 均等に広がるように */
     }
 
     .settings-nav__label {
@@ -849,8 +912,10 @@ html {
 
     /* 設定モーダル専用の調整 */
     #settingsModal .modal-content {
-        max-height: 95vh; /* スマホでは画面の95%まで */
-        margin: 1rem; /* 上下にマージンを追加 */
+        max-width: 450px; /* スマホでの横幅の上限を制限 */
+        width: 92%; /* 左右に少し余裕を持たせる */
+        max-height: 80vh; /* 画面の90%までに抑える */
+        margin: auto; /* 中央配置を確実に */
     }
 
     #settingsModal .modal-body {
@@ -944,6 +1009,23 @@ html {
     margin-top: 0.5rem;
     display: flex;
     gap: 0.5rem;
+}
+
+.data-management-actions {
+    margin-bottom: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.data-management-actions .btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.data-management-actions .material-symbols-outlined {
+    font-size: 1.2rem;
 }
 
 .demo-toggle-row {

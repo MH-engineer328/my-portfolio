@@ -12,7 +12,7 @@ class ProjectGallery {
         // querySelectorAll: 複数の要素を取得（配列になる）
         this.slides = Array.from(document.querySelectorAll('.gallery-slide'));
         this.dots = Array.from(document.querySelectorAll('.dot'));
-        
+
         // querySelector: 1つの要素を取得
         this.prevBtn = document.querySelector('.nav-prev');
         this.nextBtn = document.querySelector('.nav-next');
@@ -187,7 +187,7 @@ class ProjectGallery {
 
         // スワイプ距離が閾値より小さい場合は無視
         if (Math.abs(distance) < threshold) return;
-        
+
         // 左にスワイプ（distance > 0）→ 次のスライド
         // 右にスワイプ（distance < 0）→ 前のスライド
         if (distance > 0) {

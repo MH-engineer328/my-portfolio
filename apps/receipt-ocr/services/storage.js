@@ -119,6 +119,13 @@ class ReceiptStorage {
     }
 
     /**
+     * カテゴリ学習データを消去
+     */
+    clearCategoryLearning() {
+        localStorage.removeItem(this.categoryLearningKey);
+    }
+
+    /**
      * 設定を取得
      */
     getSettings() {
