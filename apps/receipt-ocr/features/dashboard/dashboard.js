@@ -49,6 +49,11 @@ ReceiptApp.prototype.renderSummaryCard = function() {
     const remainingText = this.elements.budgetRemainingText;
     const budgetTotalEl = this.elements.monthlyBudgetTotal;
     const progressContainer = this.elements.budgetProgressContainer;
+    const forecastMarker = this.elements.budgetForecastMarker;
+    const forecastLine = this.elements.budgetForecastLine;
+    const forecastDot = this.elements.budgetForecastDot;
+    const forecastRow = this.elements.budgetForecastRow;
+    const forecastText = this.elements.budgetForecastText;
 
     if (!progressBar || !progressText || !remainingText) return;
 
@@ -61,6 +66,11 @@ ReceiptApp.prototype.renderSummaryCard = function() {
         progressText.textContent = '0%';
         remainingText.textContent = '予算を設定してください';
         if (progressContainer) progressContainer.classList.remove('is-over');
+        if (forecastMarker) {
+            forecastMarker.style.opacity = '0';
+            forecastMarker.title = '';
+        }
+        if (forecastRow) forecastRow.style.display = 'none';
         return;
     }
 
@@ -71,13 +81,17 @@ ReceiptApp.prototype.renderSummaryCard = function() {
     // バーの幅を支出割合に設定
     progressBar.style.width = `${displayRatio * 100}%`;
 
-    // 予算オーバー時のスタイル制御
-    if (monthlyTotal > monthlyBudget) {
-        if (progressContainer) progressContainer.classList.add('is-over');
-        remainingText.parentElement.classList.add('is-over');
-    } else {
-        if (progressContainer) progressContainer.classList.remove('is-over');
-        remainingText.parentElement.classList.remove('is-over');
+    // 進捗率に応じたクラス制御
+    const summaryCard = document.getElementById('summaryCard');
+    if (summaryCard) {
+        summaryCard.classList.remove('is-low', 'is-medium', 'is-over');
+        if (spentRatio >= 1) {
+            summaryCard.classList.add('is-over');
+        } else if (spentRatio >= 0.5) {
+            summaryCard.classList.add('is-medium');
+        } else {
+            summaryCard.classList.add('is-low');
+        }
     }
 
     // テキスト表示を更新
@@ -85,7 +99,53 @@ ReceiptApp.prototype.renderSummaryCard = function() {
 
     remainingText.innerHTML = remaining >= 0
         ? `あと <b>¥ ${remaining.toLocaleString()}</b> 使えます`
-        : `予算超過: <b>¥ ${Math.abs(remaining).toLocaleString()}</b>`;
+        : `⚠️ 予算超過: <b>¥ ${Math.abs(remaining).toLocaleString()}</b>`;
+
+    /**
+     * 月末予測ライン（案3）
+     * - 現在までの平均ペース（月初〜今日）から月末の合計を推定
+     * - 予算に対する「月末時点の到達点」をバー上に縦線で表示
+     */
+    const dayOfMonth = Math.max(1, now.getDate());
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const forecastTotal = (monthlyTotal / dayOfMonth) * daysInMonth;
+    const forecastRatio = monthlyBudget > 0 ? (forecastTotal / monthlyBudget) : 0;
+    const forecastDisplayRatio = Math.min(Math.max(forecastRatio, 0), 1); // 表示位置は0〜100%に丸める
+    const showForecast = monthlyTotal > 0 && Number.isFinite(forecastRatio);
+    const isForecastOver = forecastRatio > 1;
+
+    if (forecastMarker) {
+        if (showForecast) {
+            forecastMarker.style.left = `${forecastDisplayRatio * 100}%`;
+            forecastMarker.style.transform = 'translateX(-50%)';
+            forecastMarker.style.opacity = '1';
+            forecastMarker.title = `月末予想: ¥${Math.round(forecastTotal).toLocaleString()}（予算比 ${Math.round(forecastRatio * 100)}%）`;
+        } else {
+            forecastMarker.style.opacity = '0';
+            forecastMarker.title = '';
+        }
+    }
+
+    // 超過見込みならアンバー系に（カードの雰囲気に合わせて控えめに）
+    if (forecastLine) {
+        forecastLine.style.background = isForecastOver ? 'rgba(245, 158, 11, 0.75)' : '';
+    }
+    if (forecastDot) {
+        forecastDot.style.background = isForecastOver ? '#f59e0b' : '';
+        forecastDot.style.boxShadow = isForecastOver
+            ? '0 0 0 3px rgba(245, 158, 11, 0.18)'
+            : '';
+    }
+
+    if (forecastRow && forecastText) {
+        if (showForecast) {
+            forecastRow.style.display = 'flex';
+            forecastText.textContent = `¥${Math.round(forecastTotal).toLocaleString()}（${Math.round(forecastRatio * 100)}%）`;
+        } else {
+            forecastRow.style.display = 'none';
+            forecastText.textContent = '-';
+        }
+    }
 };
 
 /**
@@ -103,12 +163,25 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
     monday.setDate(diff);
     monday.setHours(0, 0, 0, 0);
 
+    // 期間ラベルを更新（12/4 - 12/10 形式）
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const rangeLabel = document.getElementById('weeklyRangeLabel');
+    if (rangeLabel) {
+        rangeLabel.textContent = `${monday.getMonth() + 1}/${monday.getDate()} - ${sunday.getMonth() + 1}/${sunday.getDate()}`;
+    }
+
     // 週間データを取得
     const weeklyReceipts = this.storage.getWeeklyReceipts(monday);
     const settings = this.storage.getSettings();
     const weeklyBudget = Number(settings.weeklyBudget) || 0;
 
     const dayLabels = ['月', '火', '水', '木', '金', '土', '日'];
+    const todayIndex = (() => {
+        const d = new Date();
+        const dow = d.getDay(); // 0=日
+        return dow === 0 ? 6 : dow - 1; // 月=0, 日=6
+    })();
     const dailyBudget = weeklyBudget / 7;
     const budgetLineData = Array(dayLabels.length).fill(dailyBudget);
 
@@ -162,44 +235,67 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
         this.weeklyChartInstance.destroy();
     }
 
+    // 週間レポート：画像のような青い吹き出し（常時表示）
+    const getOrCreateWeeklyBubble = (chart) => {
+        const parent = chart.canvas.parentNode;
+        let el = parent.querySelector('.weekly-tooltip-bubble');
+        if (!el) {
+            el = document.createElement('div');
+            el.className = 'weekly-tooltip-bubble';
+            parent.appendChild(el);
+        }
+        return el;
+    };
+
+    const weeklyBubblePlugin = {
+        id: 'weeklyBubble',
+        afterDatasetsDraw(chart) {
+            const bubble = getOrCreateWeeklyBubble(chart);
+
+            // 各曜日の合計（棒グラフのみ。予算ラインは除外）
+            const totals = new Array(chart.data.labels.length).fill(0);
+            chart.data.datasets.forEach(ds => {
+                if (ds.type === 'line') return;
+                ds.data.forEach((value, i) => {
+                    totals[i] += (Number(value) || 0);
+                });
+            });
+
+            // 表示する曜日（基本: 今日 / 今日が0なら最大値）
+            let idx = todayIndex;
+            if ((totals[idx] || 0) <= 0) {
+                let max = 0;
+                let maxIdx = -1;
+                totals.forEach((t, i) => {
+                    if (t > max) { max = t; maxIdx = i; }
+                });
+                idx = maxIdx;
+            }
+
+            if (idx == null || idx < 0 || (totals[idx] || 0) <= 0) {
+                bubble.classList.remove('is-visible');
+                return;
+            }
+
+            const total = totals[idx];
+            bubble.textContent = `¥${total.toLocaleString()}`;
+
+            const xPos = chart.scales.x.getPixelForTick(idx);
+            const yPos = chart.scales.y.getPixelForValue(total);
+
+            // 位置微調整：右に寄せ、棒グラフから少し上に浮かせる
+            const offsetX = 12 // 右に寄せる量
+            const offsetY = 10; // 上に上げる量
+            bubble.style.left = `${xPos + offsetX}px`;
+            bubble.style.top = `${yPos - offsetY}px`;
+            bubble.classList.add('is-visible');
+        }
+    };
+
     // 棒グラフを描画
     this.weeklyChartInstance = new Chart(ctx, {
         type: 'bar',
-        plugins: [{
-            id: 'topLabels',
-            afterDatasetsDraw(chart) {
-                const { ctx, scales: { x, y } } = chart;
-                ctx.save();
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'bottom';
-                ctx.font = 'bold 11px sans-serif';
-                ctx.fillStyle = '#555';
-
-                const meta = chart.getDatasetMeta(0);
-                const datasetCount = chart.data.datasets.length;
-
-                // 各曜日の合計値を計算
-                const totals = new Array(chart.data.labels.length).fill(0);
-                chart.data.datasets.forEach(dataset => {
-                    if (dataset.type === 'line') return; // 予算ラインは除外
-                    dataset.data.forEach((value, i) => {
-                        totals[i] += (value || 0);
-                    });
-                });
-
-                // 合計値が0より大きい場合のみ、一番高いバーの上にラベルを描画
-                totals.forEach((total, i) => {
-                    if (total > 0) {
-                        // 積み上げの最上部の位置を探す
-                        let topY = y.getPixelForValue(total);
-                        const xPos = x.getPixelForTick(i);
-
-                        ctx.fillText(`¥${total.toLocaleString()}`, xPos, topY - 5);
-                    }
-                });
-                ctx.restore();
-            }
-        }],
+        plugins: [weeklyBubblePlugin],
         data: {
             labels: dayLabels,
             datasets: [
@@ -254,15 +350,7 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
                     }
                 },
                 tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                    callbacks: {
-                        label: function(context) {
-                            const datasetLabel = context.dataset.label || '';
-                            const amount = context.parsed.y || 0;
-                            return `${datasetLabel}: ¥${amount.toLocaleString()}`;
-                        }
-                    }
+                    enabled: false
                 }
             },
             scales: {
@@ -272,7 +360,8 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
                         display: false
                     },
                     ticks: {
-                        color: '#4b5563'
+                        color: (ctx) => (ctx.index === todayIndex ? '#2563eb' : '#111827'),
+                        font: (ctx) => (ctx.index === todayIndex ? { weight: '800' } : { weight: '600' })
                     }
                 },
                 y: {
@@ -282,7 +371,7 @@ ReceiptApp.prototype.renderWeeklyChart = function() {
                         callback: function(value) {
                             return '¥' + value.toLocaleString();
                         },
-                        color: '#4b5563',
+                        color: '#111827',
                         maxTicksLimit: 5
                     },
                     grid: {
@@ -1130,18 +1219,27 @@ ReceiptApp.prototype.renderCalendar = function() {
  * カレンダーの日付セルを作成
  */
 ReceiptApp.prototype.createCalendarDay = function(dayNumber, isOtherMonth, amount, dateStr, isSelected = false) {
-    const day = document.createElement('div');
-    day.className = 'calendar-day';
+    const day = document.createElement('div');    day.className = 'calendar-day relative';
+
+    const todayObj = new Date();
+    const todayStr = this.formatDateForStorage(todayObj);
+    const isToday = (dateStr === todayStr) && !isOtherMonth;
+
     if (isOtherMonth) {
         day.classList.add('other-month');
     }
     if (isSelected) {
         day.classList.add('selected');
     }
+
+    // 今日を青く強調
+    if (isToday) {
+        day.classList.add('!border-blue-600', '!border-2');
+    }
     day.dataset.date = dateStr;
 
     const numberEl = document.createElement('div');
-    numberEl.className = 'calendar-day-number';
+    numberEl.className = `calendar-day-number ${isToday ? 'bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center' : ''}`;
     numberEl.textContent = dayNumber;
     day.appendChild(numberEl);
 
@@ -1149,6 +1247,7 @@ ReceiptApp.prototype.createCalendarDay = function(dayNumber, isOtherMonth, amoun
         const amountEl = document.createElement('div');
         amountEl.className = 'calendar-day-amount';
         amountEl.textContent = `¥${amount.toLocaleString()}`;
+
         day.appendChild(amountEl);
     }
 

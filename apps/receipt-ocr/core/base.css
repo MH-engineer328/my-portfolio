@@ -1,18 +1,20 @@
 /* 既存ポートフォリオのCSS Variablesを継承 */
 :root {
-    --primary-color: #2563eb;
-    --primary-dark: #1e40af;
-    --primary-light: #3b82f6;
+    /* Blue/Slate基調（Tailwindのパレットに合わせる） */
+    --primary-color: #2563eb;   /* blue-600 */
+    --primary-dark: #1d4ed8;    /* blue-700 (hover) */
+    --primary-light: #3b82f6;   /* blue-500 */
     --secondary-color: #7c3aed;
-    --accent-color: #f59e0b;
+    --accent-color: #f59e0b;    /* amber-500 */
 
-    --text-color: #0f172a;
-    --text-secondary: #475569;
-    --text-light: #64748b;
+    --text-color: #1e293b;      /* slate-800 */
+    --text-secondary: #64748b;  /* slate-500 */
+    --text-light: #64748b;      /* slate-500 */
     --text-muted: #94a3b8;
+    --text-danger: #f59e0b;     /* redは避け、warning系としてamberへ */
 
     --bg-color: #ffffff;
-    --bg-light: #f8fafc;
+    --bg-light: #f8fafc;        /* slate-50 */
     --bg-lighter: #f1f5f9;
 
     --border-color: #e2e8f0;

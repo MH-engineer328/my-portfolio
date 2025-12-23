@@ -58,6 +58,11 @@
     font-size: 0.875rem;
 }
 
+/* 今日の曜日（ヘッダー）を強調 */
+.calendar-day-header.is-today {
+    color: var(--primary, #3b82f6);
+}
+
 .calendar-day {
     aspect-ratio: 1;
     border: 1px solid var(--border-color, #e5e7eb);
@@ -72,6 +77,24 @@
     background: var(--bg-light, #f9fafb);
     position: relative;
     min-height: 60px;
+}
+
+/* 今日の日付を青く強調（枠＋日付丸） */
+.calendar-day.is-today {
+    border-color: var(--primary, #3b82f6);
+    border-width: 2px;
+}
+
+.calendar-day.is-today .calendar-day-number {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background: var(--primary, #3b82f6);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.25rem;
 }
 
 .calendar-day:hover {
