@@ -72,7 +72,7 @@
 
 /* ダッシュボード（home-temp風） */
 .dashboard-unified {
-    --dash-bg: #f5f7fa;
+    --dash-bg: #F8F8FC;
     --dash-card-bg: #ffffff;
     --dash-primary: #0f7ae5;
     --dash-gradient-start: #2b8cff;

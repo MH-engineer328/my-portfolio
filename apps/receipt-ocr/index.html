@@ -78,6 +78,8 @@
         }
     </style>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,0">
+    <!-- Font Awesome（カテゴリのアイコン表示で使用） -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -90,16 +92,11 @@
     <!-- ヘッダー -->
     <header class="app-header">
         <div class="header-content">
-            <a href="#" class="back-button" id="backLink" aria-label="ホームに戻る">
-                <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
-            </a>
-            <h1 class="app-title">
-                <span class="app-title-line">Smart</span>
-                <span class="app-title-line">Receipt</span>
-            </h1>
-            <button class="settings-button" id="settingsBtn" type="button" aria-label="設定を開く">
-                <span class="material-symbols-outlined" aria-hidden="true">settings</span>
-            </button>
+            <div class="header-center">
+                <button class="month-nav-btn" id="prevMonthBtn"><span class="material-symbols-outlined">chevron_left</span></button>
+                <h1 class="current-month-display" id="currentMonthDisplay">2023年10月</h1>
+                <button class="month-nav-btn" id="nextMonthBtn"><span class="material-symbols-outlined">chevron_right</span></button>
+            </div>
         </div>
     </header>
 
@@ -107,75 +104,81 @@
     <div class="app-container">
     <main class="app-main">
         <!-- ダッシュボード画面 -->
-        <section id="dashboard" class="screen active dashboard-unified bg-gradient-to-b from-slate-50 to-slate-100">
+        <section id="dashboard" class="screen active dashboard-unified bg-slate-50">
             <div class="container dashboard-single">
                 <div class="dashboard-stack">
-                    <div class="dash-card summary-card bg-white border border-slate-100 shadow-[0_15px_45px_rgba(0,0,0,0.08)] rounded-[20px] p-6 flex flex-col gap-5" id="summaryCard">
-                        <div class="summary-card__header flex items-start justify-between gap-4">
-                            <div class="min-w-0 text-left">
-                                <p class="summary-card__label mb-2 text-slate-900/80 font-semibold text-[0.9rem] tracking-wide">今月の支出</p>
-                                <div class="summary-card__amount-row flex flex-col gap-1">
-                                    <div class="summary-card__amount flex items-baseline justify-start gap-2 mb-1">
-                                        <span class="summary-card__currency text-2xl font-bold text-blue-600/90">¥</span>
-                                        <span class="summary-card__value text-5xl font-black text-blue-600 tracking-tight leading-none" id="monthlyTotal">0</span>
-                                    </div>
-                                    <div class="summary-card__balance text-base text-slate-900/80 font-medium" id="budgetBalance">
-                                        <span id="budgetRemainingText">あと ¥0 使えます</span>
-                                    </div>
-                                </div>
-                            </div>
+                    <!-- 総支出セクション -->
+                    <div class="total-expenditure-section text-center pt-10 pb-2">
+                        <p class="text-slate-500 font-medium mb-1" id="monthlyLabel">
+                            <span id="currentMonthText">10</span>月の総支出
+                        </p>
+                        <div class="total-amount flex items-center justify-center gap-1">
+                            <span class="text-3xl font-bold text-slate-900">¥</span>
+                            <span class="text-6xl font-black text-slate-900 tracking-tight" id="monthlyTotal">0</span>
+                        </div>
+                    </div>
 
-                            <!-- 右上へ移動（コンパクト版） -->
-                            <button
-                                class="summary-card__settings-btn shrink-0 inline-flex items-center gap-2 bg-blue-50 text-blue-600 border border-blue-100 rounded-full pl-3 pr-2 py-2 font-bold text-[0.85rem] cursor-pointer transition-all hover:bg-blue-100 hover:-translate-y-px hover:shadow-[0_8px_16px_rgba(37,99,235,0.1)]"
-                                id="budgetEditBtn"
-                                type="button"
-                                aria-label="予算を設定する"
-                                title="予算を設定"
-                            >
-                                <span class="material-symbols-outlined text-[18px] leading-none text-blue-600/95" aria-hidden="true">payments</span>
-                                <span class="hidden sm:inline">予算設定</span>
-                                <span id="monthlyBudgetTotal" class="tabular-nums">¥0</span>
-                                <span class="material-symbols-outlined text-[18px] leading-none opacity-70" aria-hidden="true">edit</span>
+                    <!-- 総予算カード（設定機能付き） -->
+                    <div class="dash-card budget-card bg-white rounded-[24px] p-6 shadow-sm border border-slate-100 mx-1 mb-6" id="summaryCard">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-slate-800 font-bold text-[1rem]">今月の総予算</h2>
+                            <button id="budgetEditBtn" class="flex items-center gap-1.5 bg-blue-50 text-primary px-3 py-1.5 rounded-full text-[0.85rem] font-bold hover:bg-blue-100 transition-colors" aria-label="予算設定を編集">
+                                <span class="material-symbols-outlined text-[18px]">payments</span>
+                                予算の設定
                             </button>
                         </div>
 
-                        <div class="summary-card__body w-full">
-                            <div class="summary-card__progress-wrapper flex items-center gap-3">
-                                <div class="summary-card__progress-container flex-1 relative h-3.5 bg-blue-50 rounded-full overflow-hidden" id="budgetProgressContainer">
-                                    <div class="summary-card__progress-bar absolute top-0 left-0 h-full bg-blue-500 rounded-full transition-[width] duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]" id="budgetProgressBar"></div>
-                                    <!-- 月末予測ライン（案3） -->
-                                    <div id="budgetForecastMarker" class="absolute top-0 bottom-0 opacity-0 transition-opacity duration-300 pointer-events-none" aria-hidden="true">
-                                        <div id="budgetForecastLine" class="absolute top-0 bottom-0 w-[2px] -translate-x-1/2 left-1/2 bg-blue-600/70 rounded-full"></div>
-                                        <div id="budgetForecastDot" class="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-blue-600 shadow-[0_0_0_3px_rgba(37,99,235,0.18)]"></div>
-                                    </div>
-                                </div>
-                                <span class="summary-card__progress-percent text-[0.9rem] font-bold text-blue-600 min-w-[45px] text-right" id="budgetProgressText">0%</span>
+                        <div class="flex justify-between items-end mb-1">
+                            <div class="flex items-baseline gap-1">
+                                <span class="text-3xl font-extrabold text-slate-800" id="monthlyBudgetTotal">¥0</span>
+                                <span class="text-[0.8rem] text-slate-400 font-bold">（総額）</span>
                             </div>
-                            <div id="budgetForecastRow" class="mt-2 flex items-center justify-between text-[0.85rem] text-slate-900/80" style="display:none;">
-                                <span class="font-semibold">月末予想</span>
-                                <span id="budgetForecastText" class="font-bold text-slate-900">-</span>
+                            <div class="text-right">
+                                <span class="text-[1.1rem] font-black text-slate-800" id="budgetProgressText">0%</span>
                             </div>
                         </div>
 
-                        <!-- footerの予算ボタンは右上へ移動 -->
+                        <div class="w-full h-[12px] bg-slate-100 rounded-full overflow-hidden mb-4" id="budgetProgressContainer">
+                            <div class="h-full bg-primary rounded-full transition-all duration-700 ease-out" id="budgetProgressBar"></div>
+                        </div>
+
+                        <div class="flex justify-end items-center text-[0.95rem]">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-slate-400" id="budgetRemainingLabel">残り:</span>
+                                <span class="font-bold text-primary text-[1.2rem]" id="budgetRemainingText">¥0</span>
+                            </div>
+                        </div>
+
+                        <!-- 隠し要素（JSエラー防止用） -->
+                        <div id="budgetForecastMarker" style="display:none;"></div>
+                        <div id="budgetForecastLine" style="display:none;"></div>
+                        <div id="budgetForecastDot" style="display:none;"></div>
+                        <div id="budgetForecastRow" style="display:none;"></div>
+                        <div id="budgetForecastText" style="display:none;"></div>
                     </div>
 
-                    <!-- 週間レポート -->
-                    <div class="dash-card weekly-card">
-                        <div class="dash-card-header">
-                            <div>
-                                <h2 class="dash-card-title">週間レポート</h2>
-                                <p class="dash-card-subtitle" id="weeklyRangeLabel">期間を読み込み中...</p>
-                            </div>
+                    <!-- 週間レポート（既存、カテゴリ内訳への布石として維持） -->
+                    <!-- カテゴリ別内訳 -->
+                    <div class="category-section mx-1 mt-4">
+                        <div class="flex justify-between items-center mb-3 px-1">
+                            <h2 class="text-slate-800 font-bold text-[1rem]">カテゴリ別内訳</h2>
+                            <button class="bg-blue-50 text-primary text-[0.85rem] font-bold px-3 py-1.5 rounded-full hover:bg-blue-100 active:bg-blue-200 transition-all active:scale-95" id="categoryDetailBtn">詳細を見る📅</button>
                         </div>
-                        <div class="chart-card chart-card--modern">
-                            <canvas id="weeklyChart"></canvas>
+                        <div class="dash-card category-card bg-white rounded-[24px] p-6 shadow-sm border border-slate-100">
+                            <div id="categoryBreakdownContainer" class="flex flex-col gap-6">
+                                <!-- JSで動的に生成 -->
+                            </div>
+
+                            <!-- 既存の週間レポート要素（非表示で維持） -->
+                            <div id="weeklyReportOld" style="display: none;">
+                                <p class="dash-card-subtitle" id="weeklyRangeLabel"></p>
+                                <canvas id="weeklyChart"></canvas>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- レシート履歴 -->
-                    <div class="dash-card timeline-card" id="recentSection">
+                    <!-- レシート履歴（非表示で維持） -->
+                    <div class="dash-card timeline-card" id="recentSection" style="display: none;">
                         <div class="dash-card-header is-collapsible" id="recentSectionHeader">
                             <div>
                                 <h2 class="dash-card-title">レシート履歴</h2>
@@ -362,20 +365,6 @@
         </div>
     </div>
 
-    <!-- 画像プレビュー用モーダル -->
-    <div id="imagePreviewModal" class="modal" style="display: none;">
-        <div class="modal-overlay"></div>
-        <div class="modal-content image-preview-modal">
-            <div class="modal-header">
-                <h2>レシート画像</h2>
-                <button class="modal-close" id="closeImagePreviewBtn" aria-label="閉じる">×</button>
-            </div>
-            <div class="modal-body">
-                <img id="imagePreviewModalImg" alt="レシート画像プレビュー" />
-            </div>
-        </div>
-    </div>
-
     <!-- 登録方法選択モーダル -->
     <div id="addChoiceModal" class="modal" style="display: none;">
         <div class="modal-overlay"></div>
@@ -531,6 +520,8 @@
     <script src="services/parser.js"></script>
     <script src="services/category-classifier.js"></script>
     <script src="services/gemini-service.js"></script>
+    <!-- カテゴリ表示（アイコン/色/ラベル） -->
+    <script src="core/category-ui.js"></script>
     <!-- アプリケーションコア -->
     <script src="core/app-core.js"></script>
     <!-- 機能別モジュール -->

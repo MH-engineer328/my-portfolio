@@ -1,25 +1,73 @@
 /* ダッシュボード：シングルカラムレイアウト */
 .dashboard-single {
-    padding-top: 1rem;
+    padding-top: 0.5rem;
     padding-bottom: 2rem;
 }
 
 .dashboard-stack {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.5rem;
 }
 
-.dashboard-add-btn {
-    min-width: 180px;
+/* 総支出セクション */
+.total-expenditure-section {
+    position: relative;
+    z-index: 1;
 }
 
-/* 以下のサマリーカードのスタイルは index.html 内の Tailwind CSS クラスへ移行しました
-.summary-card {
-    background: #f0f7ff;
-    ...
+.total-amount #monthlyTotal {
+    font-variant-numeric: tabular-nums;
 }
-*/
+
+/* メインアクションボタン */
+#captureBtnLarge {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    cursor: pointer;
+}
+
+#captureBtnLarge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px rgba(37, 99, 235, 0.25);
+}
+
+#captureBtnLarge:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* 予算カード（画像のデザインをベースに調整） */
+.budget-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.budget-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+/* 進捗バーのアニメーション */
+#budgetProgressBar {
+    box-shadow: 0 0 10px rgba(37, 99, 235, 0.2);
+}
+
+/* JSによって動的に付与されるクラスへの対応（予算超過時など） */
+.is-over #budgetProgressBar {
+    background-color: #ef4444; /* red-500 */
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+}
+.is-over #budgetRemainingText {
+    color: #ef4444;
+}
+
+/* 週間グラフカード（スタイル統一） */
+.weekly-card {
+    transition: transform 0.2s ease;
+}
+.weekly-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
 
 /* ボトムシート */
 .bottom-sheet {

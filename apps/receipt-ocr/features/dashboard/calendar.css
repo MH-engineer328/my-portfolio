@@ -132,7 +132,8 @@
 
 .calendar-day-amount {
     font-size: 0.7rem;
-    color: var(--text-danger, #ef4444);
+    /* 金額は目立つが警告色にしない（primaryの青へ統一） */
+    color: var(--primary, #3b82f6);
     font-weight: 500;
 }
 
@@ -149,21 +150,35 @@
 }
 
 /* モーダル内のカレンダー */
-.calendar-modal .modal-content {
+.modal-content.calendar-modal {
     max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
+    max-height: 92vh;
+    height: 92vh; /* 見切れ防止：モーダル内で確実にレイアウトを組む */
+    overflow: hidden; /* 下段のみスクロールさせる */
+    display: flex;
+    flex-direction: column;
 }
 
-.calendar-modal .modal-body {
+.modal-content.calendar-modal .modal-body {
     padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow: hidden; /* 基本は下段だけスクロール */
+    flex: 1 1 auto;
+    min-height: 0; /* 子要素overflowを効かせる */
 }
 
 /* カレンダー詳細セクション */
 .calendar-details {
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
+    margin-top: 0;
+    padding-top: 1rem;
     border-top: 1px solid var(--border-color, #e5e7eb);
+    flex: 1 1 auto;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* 下段リストのスクロール有効化 */
 }
 
 .calendar-details-header {
@@ -181,6 +196,43 @@
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    overflow-y: auto;
+    padding-bottom: 0.25rem;
+    min-height: 0;
+}
+
+/* 画面が小さい場合：カレンダーが大きくて下段が見切れるため、本文全体をスクロール可能にする（ダブルスクロール回避） */
+@media (max-width: 640px) {
+    .modal-content.calendar-modal {
+        height: 92vh;
+    }
+
+    .modal-content.calendar-modal .modal-body {
+        overflow-y: auto; /* 本文全体でスクロール */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .calendar-details-list {
+        overflow: visible; /* 内側スクロールは無効化（本文スクロールに一本化） */
+    }
+}
+
+/* ハイブリッド：下段の明細（タイムライン・コンパクト）右側（金额＋編集） */
+.calendar-details .calendar-hybrid-item .timeline-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.calendar-details .calendar-hybrid-item .calendar-edit-btn {
+    width: 2.25rem;
+    height: 2.25rem;
+}
+
+.calendar-details .calendar-hybrid-item .calendar-edit-btn .material-symbols-outlined {
+    font-size: 20px;
+    line-height: 1;
 }
 
 .calendar-details-item {
@@ -192,11 +244,18 @@
     border-radius: 8px;
     border: 1px solid var(--border-color, #e5e7eb);
     transition: all 0.2s ease;
+    cursor: pointer;
 }
 
 .calendar-details-item:hover {
     background: var(--primary-light, rgba(59, 130, 246, 0.05));
     border-color: var(--primary, #3b82f6);
+    transform: translateY(-1px);
+}
+
+.calendar-details-item:active {
+    transform: scale(0.98);
+    opacity: 0.8;
 }
 
 .calendar-details-item-info {

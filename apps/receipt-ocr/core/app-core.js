@@ -49,9 +49,11 @@ class ReceiptApp {
             // ダッシュボード要素
             summaryCard: document.getElementById('summaryCard'),
             monthlyTotal: document.getElementById('monthlyTotal'),
+            captureBtnLarge: document.getElementById('captureBtnLarge'),
             budgetProgressContainer: document.getElementById('budgetProgressContainer'),
             budgetProgressBar: document.getElementById('budgetProgressBar'),
             budgetProgressText: document.getElementById('budgetProgressText'),
+            budgetRemainingLabel: document.getElementById('budgetRemainingLabel'),
             budgetRemainingText: document.getElementById('budgetRemainingText'),
             monthlyBudgetTotal: document.getElementById('monthlyBudgetTotal'),
             budgetForecastMarker: document.getElementById('budgetForecastMarker'),
@@ -59,6 +61,7 @@ class ReceiptApp {
             budgetForecastDot: document.getElementById('budgetForecastDot'),
             budgetForecastRow: document.getElementById('budgetForecastRow'),
             budgetForecastText: document.getElementById('budgetForecastText'),
+            categoryBreakdownContainer: document.getElementById('categoryBreakdownContainer'),
             weeklyChart: document.getElementById('weeklyChart'),
             receiptsContainer: document.getElementById('receiptsContainer'),
             dashboardAddBtn: document.getElementById('dashboardAddBtn'),
@@ -66,6 +69,11 @@ class ReceiptApp {
             allReceiptsModal: document.getElementById('allReceiptsModal'),
             closeAllReceiptsBtn: document.getElementById('closeAllReceiptsBtn'),
             allReceiptsContainer: document.getElementById('allReceiptsContainer'),
+            
+            // ヘッダー要素
+            prevMonthBtn: document.getElementById('prevMonthBtn'),
+            nextMonthBtn: document.getElementById('nextMonthBtn'),
+            currentMonthDisplay: document.getElementById('currentMonthDisplay'),
 
             // 登録方法選択モーダル
             addChoiceModal: document.getElementById('addChoiceModal'),
@@ -154,6 +162,13 @@ class ReceiptApp {
             this.elements.imageInput.click();
         });
 
+        // ダッシュボードの大きな撮影ボタン
+        if (this.elements.captureBtnLarge) {
+            this.elements.captureBtnLarge.addEventListener('click', () => {
+                this.elements.imageInput.click();
+            });
+        }
+
         // ダッシュボードの追加ボタン（現在未使用だが存在時のみ対応）
         if (this.elements.dashboardAddBtn) {
             this.elements.dashboardAddBtn.addEventListener('click', () => {
@@ -168,14 +183,21 @@ class ReceiptApp {
             });
         }
 
-        // カレンダーボタン
+        // カレンダーボタン（およびカテゴリ別内訳の詳細ボタン）
         const openCalendarBtn = document.getElementById('openCalendarBtn');
+        const categoryDetailBtn = document.getElementById('categoryDetailBtn');
+
+        const openCalendar = () => {
+            if (this.showCalendarModal) {
+                this.showCalendarModal();
+            }
+        };
+
         if (openCalendarBtn) {
-            openCalendarBtn.addEventListener('click', () => {
-                if (this.showCalendarModal) {
-                    this.showCalendarModal();
-                }
-            });
+            openCalendarBtn.addEventListener('click', openCalendar);
+        }
+        if (categoryDetailBtn) {
+            categoryDetailBtn.addEventListener('click', openCalendar);
         }
 
         // 画像選択
@@ -228,6 +250,21 @@ class ReceiptApp {
         if (settingsBtn) {
             settingsBtn.addEventListener('click', () => {
                 this.showSettingsModal();
+            });
+        }
+
+        // 月移動ボタン
+        if (this.elements.prevMonthBtn) {
+            this.elements.prevMonthBtn.addEventListener('click', () => {
+                this.currentMonth.setMonth(this.currentMonth.getMonth() - 1);
+                this.updateDashboard();
+            });
+        }
+
+        if (this.elements.nextMonthBtn) {
+            this.elements.nextMonthBtn.addEventListener('click', () => {
+                this.currentMonth.setMonth(this.currentMonth.getMonth() + 1);
+                this.updateDashboard();
             });
         }
     }
@@ -487,9 +524,31 @@ class ReceiptApp {
      * ダッシュボードを更新
      */
     updateDashboard() {
+        this.updateMonthDisplay();
         this.renderSummaryCard();
-        this.renderWeeklyChart();
+        // 週間グラフの代わりにカテゴリ別内訳を表示（既存コード維持のためコメントアウト）
+        // this.renderWeeklyChart();
+        this.renderCategoryBreakdown();
         this.renderRecentReceipts();
+    }
+
+    /**
+     * 月表示を更新
+     */
+    updateMonthDisplay() {
+        const year = this.currentMonth.getFullYear();
+        const month = this.currentMonth.getMonth() + 1;
+        
+        // ヘッダーの表示を更新
+        if (this.elements.currentMonthDisplay) {
+            this.elements.currentMonthDisplay.textContent = `${year}年${month}月`;
+        }
+
+        // ダッシュボード内の「〇月の総支出」テキストを更新
+        const currentMonthText = document.getElementById('currentMonthText');
+        if (currentMonthText) {
+            currentMonthText.textContent = month;
+        }
     }
 }
 

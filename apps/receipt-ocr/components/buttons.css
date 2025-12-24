@@ -21,6 +21,10 @@
     box-shadow: var(--shadow-md);
 }
 
+.btn-primary:active {
+    transform: translateY(0) scale(0.98);
+}
+
 .btn-secondary {
     background: var(--bg-light);
     color: var(--text-color);
@@ -29,6 +33,11 @@
 
 .btn-secondary:hover {
     background: var(--border-color);
+}
+
+.btn-secondary:active {
+    background: var(--border-color);
+    transform: scale(0.98);
 }
 
 .btn-sm {

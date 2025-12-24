@@ -135,43 +135,6 @@ class GeminiService {
 
         return text;
     }
-
-    /**
-     * 画像をリサイズ（LocalStorage用のサムネイル作成）
-     */
-    createThumbnail(file, maxWidth = 300) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-
-            reader.onload = (e) => {
-                const img = new Image();
-
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > maxWidth) {
-                        height = (height * maxWidth) / width;
-                        width = maxWidth;
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    const base64 = canvas.toDataURL('image/jpeg', 0.8);
-                    resolve(base64);
-                };
-
-                img.src = e.target.result;
-            };
-
-            reader.readAsDataURL(file);
-        });
-    }
 }
 
 // グローバルにエクスポート

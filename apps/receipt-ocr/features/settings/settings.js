@@ -246,21 +246,21 @@ ReceiptApp.prototype.renderCategoriesList = function() {
     const settings = this.storage.getSettings();
     categoriesList.innerHTML = '';
 
-    const iconMap = {
-        food: '🍙', daily: '🧻', restaurant: '🍽️', cafe: '☕',
-        transport: '🚃', communication: '📱', fashion: '💅', medical: '💊',
-        hobby: '🎮', social: '🎁', education: '📚', subscription: '🔄',
-        other: '📦'
-    };
-
     settings.categories.forEach(category => {
         const fixedColor = resolveCategoryColor(category.id, category.color);
-        const icon = iconMap[category.id] || '🧾';
+        const ui = (typeof window.getCategoryUI === 'function') ? window.getCategoryUI(category.id) : null;
+        const iconHtml = (typeof window.renderCategoryIconHtml === 'function')
+            ? window.renderCategoryIconHtml(category.id)
+            : (category.icon || '🧾');
+        const colorClass = ui?.color || '';
+
+        const iconClassAttr = colorClass ? `category-icon-display ${colorClass}` : 'category-icon-display';
+        const iconStyleAttr = colorClass ? '' : `style="color:${fixedColor}; background:${fixedColor}1F;"`;
         const categoryItem = document.createElement('div');
         categoryItem.className = 'category-item category-item--static';
         categoryItem.innerHTML = `
             <div class="category-info">
-                <span class="category-icon-display" style="color:${fixedColor}; background:${fixedColor}1F;">${icon}</span>
+                <span class="${iconClassAttr}" ${iconStyleAttr}>${iconHtml}</span>
                 <span class="category-name-display">${category.name}</span>
             </div>
         `;

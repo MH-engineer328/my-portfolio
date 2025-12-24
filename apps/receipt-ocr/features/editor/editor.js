@@ -34,10 +34,7 @@ ReceiptApp.prototype.handleImageUpload = async function(file) {
         // フォームに値を設定
         this.fillForm(parsed, category);
 
-        // 画像をリサイズして保存用に準備
-        const thumbnail = await this.geminiService.createThumbnail(file);
         this.currentReceipt = {
-            image: thumbnail,
             ocrRawText: parsed.rawText || geminiResult.text,
             source: geminiResult.isDemo ? 'demo' : 'gemini'
         };
@@ -170,10 +167,6 @@ ReceiptApp.prototype.loadReceiptToForm = function(receipt) {
 
     this.elements.memo.value = receipt.memo || '';
 
-    if (receipt.image) {
-        this.elements.imagePreview.innerHTML = `<img src="${receipt.image}" alt="レシート画像">`;
-    }
-
     this.currentReceipt = receipt;
 };
 
@@ -189,6 +182,9 @@ ReceiptApp.prototype.startEditReceipt = function(receiptId) {
     // モーダルが開いている場合は閉じてから編集画面へ
     if (typeof this.hideDateReceiptsModal === 'function') {
         this.hideDateReceiptsModal();
+    }
+    if (typeof this.hideCalendarModal === 'function') {
+        this.hideCalendarModal();
     }
     this.showEditor(target);
 };

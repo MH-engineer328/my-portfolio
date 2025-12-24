@@ -63,11 +63,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: color var(--transition-base);
+    transition: all var(--transition-base);
 }
 
 .modal-close:hover {
     color: var(--text-color);
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 50%;
+}
+
+.modal-close:active {
+    transform: scale(0.9);
 }
 
 .modal-body {
@@ -114,6 +120,10 @@
     background: #f1f5f9;
     border-color: var(--primary-color);
     transform: translateY(-2px);
+}
+
+.choice-item:active {
+    transform: translateY(0) scale(0.98);
 }
 
 .choice-icon {
