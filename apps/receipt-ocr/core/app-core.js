@@ -214,7 +214,20 @@ class ReceiptApp {
         });
 
         // キャンセル
-        this.elements.cancelBtn.addEventListener('click', () => this.showDashboard());
+        this.elements.cancelBtn.addEventListener('click', () => {
+            const ctx = this.editReturnContext;
+            // カレンダーから編集に入った場合は、キャンセル時にカレンダーへ戻す
+            if (ctx && ctx.screen === 'calendar' && typeof this.showCalendarModal === 'function') {
+                this.showDashboard(); // モーダルの土台としてダッシュボードを表示
+                this.showCalendarModal({
+                    month: ctx.month || null,
+                    selectedDate: ctx.selectedDate || null
+                });
+                this.editReturnContext = null;
+                return;
+            }
+            this.showDashboard();
+        });
 
         // 再撮影
         this.elements.retakeBtn.addEventListener('click', () => {
@@ -370,11 +383,7 @@ class ReceiptApp {
 
         // カテゴリを「その他」に
         this.elements.category.value = 'other';
-
-        // 金額にフォーカス
-        setTimeout(() => {
-            this.elements.totalAmount.focus();
-        }, 100);
+        // 手入力画面での自動フォーカスは、モバイルでの不要なスクロール（画面ジャンプ）の原因になるため行わない
     }
 
     /**

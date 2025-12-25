@@ -1,4 +1,9 @@
 /* カレンダー */
+.calendar-modal-title {
+    font-weight: 800;
+    color: var(--primary-color, #2563EB);
+}
+
 .calendar-card {
     background: white;
     border-radius: 16px;
@@ -46,7 +51,8 @@
 
 .calendar-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    /* スマホ幅で7列が潰れずに横はみ出ししないよう、縮小可能な列にする */
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 0.5rem;
 }
 
@@ -58,15 +64,16 @@
     font-size: 0.875rem;
 }
 
-/* 今日の曜日（ヘッダー）を強調 */
+/* 今日の曜日（ヘッダー）の強調は不要（通常表示に統一） */
 .calendar-day-header.is-today {
-    color: var(--primary, #3b82f6);
+    color: var(--text-secondary, #6b7280);
 }
 
 .calendar-day {
     aspect-ratio: 1;
-    border: 1px solid var(--border-color, #e5e7eb);
-    border-radius: 8px;
+    /* マス目（枠）をなくす */
+    border: none;
+    border-radius: 0;
     padding: 0.5rem;
     display: flex;
     flex-direction: column;
@@ -74,40 +81,45 @@
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease;
-    background: var(--bg-light, #f9fafb);
+    background: transparent;
     position: relative;
+    overflow: hidden; /* 金額テキストがセル外にはみ出して隣と被るのを防ぐ */
+    min-width: 0; /* grid itemのデフォルト(min-width:auto)による横はみ出しを防ぐ */
     min-height: 60px;
 }
 
-/* 今日の日付を青く強調（枠＋日付丸） */
+/* 今日の強調：青い枠でセル全体を囲う（青丸は使わない） */
 .calendar-day.is-today {
-    border-color: var(--primary, #3b82f6);
-    border-width: 2px;
+    background: transparent;
+    outline: 2px solid var(--primary, #3b82f6);
+    outline-offset: -1px;
+    border-radius: 12px;
 }
-
 .calendar-day.is-today .calendar-day-number {
-    width: 28px;
-    height: 28px;
-    border-radius: 999px;
-    background: var(--primary, #3b82f6);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
     margin-bottom: 0.25rem;
 }
 
+/* 今日かつ選択中：塗りつぶしの上でも枠が見えるよう少し濃い青に */
+.calendar-day.selected.is-today {
+    outline-color: var(--primary-dark, #1d4ed8);
+}
+
 .calendar-day:hover {
-    background: var(--primary-light, rgba(59, 130, 246, 0.1));
-    border-color: var(--primary, #3b82f6);
-    transform: translateY(-2px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: rgba(2, 6, 23, 0.04); /* slate-950相当の薄いhover */
+    border-radius: 10px;
+    transform: none;
+    box-shadow: none;
 }
 
 .calendar-day.selected {
     background: var(--primary, #3b82f6);
     color: white;
-    border-color: var(--primary, #3b82f6);
+    border-radius: 12px;
     font-weight: 600;
 }
 
@@ -117,7 +129,7 @@
 
 .calendar-day.other-month {
     opacity: 0.3;
-    background: var(--bg-light, #f9fafb);
+    background: transparent;
 }
 
 .calendar-day.other-month:hover {
@@ -135,6 +147,12 @@
     /* 金額は目立つが警告色にしない（primaryの青へ統一） */
     color: var(--primary, #3b82f6);
     font-weight: 500;
+    white-space: nowrap;
+    line-height: 1.1;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
 }
 
 .calendar-day.selected .calendar-day-amount {
@@ -157,6 +175,8 @@
     overflow: hidden; /* 下段のみスクロールさせる */
     display: flex;
     flex-direction: column;
+    /* 固定フッター（合計）用の下余白（本文が隠れないようにする） */
+    --calendar-total-fixed-space: 84px;
 }
 
 .modal-content.calendar-modal .modal-body {
@@ -167,6 +187,36 @@
     overflow: hidden; /* 基本は下段だけスクロール */
     flex: 1 1 auto;
     min-height: 0; /* 子要素overflowを効かせる */
+    padding-bottom: calc(1.5rem + var(--calendar-total-fixed-space) + env(safe-area-inset-bottom));
+}
+
+/* 固定フッター（表示専用の合計） */
+.calendar-details-total--fixed {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    margin: 0;
+    border-radius: 0 0 16px 16px;
+    padding: 1rem 1.25rem calc(1rem + env(safe-area-inset-bottom));
+    background: var(--primary, #3b82f6);
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 -12px 24px rgba(2, 6, 23, 0.12);
+    pointer-events: none; /* 表示専用（スクロール/タップを邪魔しない） */
+}
+
+.calendar-details-total--fixed .calendar-details-total-label,
+.calendar-details-total--fixed .calendar-details-total-amount {
+    color: #fff;
+}
+
+.calendar-details-total--fixed .calendar-details-total-amount {
+    font-weight: 900;
+    font-size: 1.25rem;
 }
 
 /* カレンダー詳細セクション */
@@ -205,15 +255,42 @@
 @media (max-width: 640px) {
     .modal-content.calendar-modal {
         height: 92vh;
+        --calendar-total-fixed-space: 76px;
     }
 
     .modal-content.calendar-modal .modal-body {
+        padding: 0.85rem; /* スマホは縦が詰まりやすいので余白を少し削る */
+        gap: 0.65rem;     /* 上段（カレンダー）と下段（明細）の間隔を詰める */
         overflow-y: auto; /* 本文全体でスクロール */
         -webkit-overflow-scrolling: touch;
+        padding-bottom: calc(0.85rem + var(--calendar-total-fixed-space) + env(safe-area-inset-bottom));
     }
 
     .calendar-details-list {
         overflow: visible; /* 内側スクロールは無効化（本文スクロールに一本化） */
+    }
+
+    /* 下段（明細）全体の余白を詰める */
+    .calendar-details {
+        padding-top: 0.65rem;
+        min-height: 140px; /* 余計な空白を減らす */
+    }
+
+    .calendar-details-header {
+        margin-bottom: 0.65rem;
+    }
+
+    .calendar-details-header h3 {
+        font-size: 1rem;
+    }
+
+    .calendar-details-list {
+        gap: 0.5rem;
+    }
+
+    .calendar-details-total {
+        margin-top: 0.65rem;
+        padding: 0.75rem;
     }
 }
 
@@ -230,7 +307,17 @@
     height: 2.25rem;
 }
 
+.calendar-details .calendar-hybrid-item .calendar-delete-btn {
+    width: 2.25rem;
+    height: 2.25rem;
+}
+
 .calendar-details .calendar-hybrid-item .calendar-edit-btn .material-symbols-outlined {
+    font-size: 20px;
+    line-height: 1;
+}
+
+.calendar-details .calendar-hybrid-item .calendar-delete-btn .material-symbols-outlined {
     font-size: 20px;
     line-height: 1;
 }
@@ -306,20 +393,57 @@
 /* レスポンシブ対応 */
 @media (max-width: 640px) {
     .calendar-card {
-        padding: 1rem;
+        padding: 0.9rem;
+        box-sizing: border-box;
+        /* 7列の各マスが潰れない範囲で、無理のない上限を設けて中央寄せ */
+        max-width: 420px;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* ヘッダー（前月/表示月/次月）も少し詰める */
+    .calendar-header {
+        margin-bottom: 0.85rem;
+    }
+
+    .calendar-nav {
+        width: 36px;
+        height: 36px;
+        padding: 0.35rem;
+        border-radius: 8px;
+    }
+
+    .calendar-nav .material-symbols-outlined {
+        font-size: 22px;
+    }
+
+    .calendar-month-label {
+        font-size: 1.05rem;
+    }
+
+    .calendar-grid {
+        gap: 0.35rem; /* マス目の間隔を均等にしつつ少し詰める */
+    }
+
+    .calendar-day-header {
+        padding: 0.55rem 0.35rem;
+        font-size: 0.8rem;
     }
 
     .calendar-day {
-        min-height: 50px;
-        padding: 0.375rem;
+        /* 画像のように少し縦長のマスへ（正方形固定を解除/上書き） */
+        aspect-ratio: 4 / 5;
+        min-height: 48px;
+        padding: 0.25rem;   /* 余白を減らして見切れ/被りを防ぐ */
     }
 
     .calendar-day-number {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
 
     .calendar-day-amount {
-        font-size: 0.65rem;
+        font-size: 0.58rem;
     }
 }
 

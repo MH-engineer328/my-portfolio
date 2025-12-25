@@ -173,12 +173,16 @@ ReceiptApp.prototype.loadReceiptToForm = function(receipt) {
 /**
  * レシート編集を開始（ダッシュボードから遷移）
  */
-ReceiptApp.prototype.startEditReceipt = function(receiptId) {
+ReceiptApp.prototype.startEditReceipt = function(receiptId, returnContext = null) {
     const target = this.storage.getReceiptById(receiptId);
     if (!target) {
         alert('レシートが見つかりませんでした');
         return;
     }
+
+    // 編集キャンセル時の戻り先（未指定ならクリア）
+    this.editReturnContext = returnContext || null;
+
     // モーダルが開いている場合は閉じてから編集画面へ
     if (typeof this.hideDateReceiptsModal === 'function') {
         this.hideDateReceiptsModal();

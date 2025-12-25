@@ -108,7 +108,7 @@
             <div class="container dashboard-single">
                 <div class="dashboard-stack">
                     <!-- 総支出セクション -->
-                    <div class="total-expenditure-section text-center pt-10 pb-2">
+                    <div class="total-expenditure-section text-center pb-2">
                         <p class="text-slate-500 font-medium mb-1" id="monthlyLabel">
                             <span id="currentMonthText">10</span>月の総支出
                         </p>
@@ -118,34 +118,45 @@
                         </div>
                     </div>
 
-                    <!-- 総予算カード（設定機能付き） -->
+                    <!-- 総予算カード（折りたたみ：常時=総予算、展開=残り/%/設定） -->
                     <div class="dash-card budget-card bg-white rounded-[24px] p-6 shadow-sm border border-slate-100 mx-1 mb-6" id="summaryCard">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-slate-800 font-bold text-[1rem]">今月の総予算</h2>
-                            <button id="budgetEditBtn" class="flex items-center gap-1.5 bg-blue-50 text-primary px-3 py-1.5 rounded-full text-[0.85rem] font-bold hover:bg-blue-100 transition-colors" aria-label="予算設定を編集">
-                                <span class="material-symbols-outlined text-[18px]">payments</span>
-                                予算の設定
+                        <div class="budget-card-header flex items-center justify-between">
+                            <div class="flex items-baseline gap-3">
+                                <h2 class="text-slate-800 font-bold text-[1rem]">今月の総予算：</h2>
+                                <span class="text-[1.2rem] font-bold text-slate-800" id="monthlyBudgetTotal">¥0</span>
+                            </div>
+                            <button
+                                id="budgetCardToggleBtn"
+                                class="budget-toggle-btn inline-flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-50 active:bg-slate-100 transition-colors"
+                                type="button"
+                                aria-controls="budgetDetails"
+                                aria-expanded="false"
+                                aria-label="予算の詳細を開く"
+                            >
+                                <span class="material-symbols-outlined budget-toggle-icon">expand_more</span>
                             </button>
                         </div>
 
-                        <div class="flex justify-between items-end mb-1">
-                            <div class="flex items-baseline gap-1">
-                                <span class="text-3xl font-extrabold text-slate-800" id="monthlyBudgetTotal">¥0</span>
-                                <span class="text-[0.8rem] text-slate-400 font-bold">（総額）</span>
+                        <div id="budgetDetails" class="budget-details" hidden>
+                            <div class="flex justify-end items-center mb-4 mt-3">
+                                <button id="budgetEditBtn" class="flex items-center gap-1.5 bg-blue-50 text-primary px-3 py-1.5 rounded-full text-[0.85rem] font-bold hover:bg-blue-100 transition-colors" aria-label="予算設定を編集">
+                                    <span class="material-symbols-outlined text-[18px]">payments</span>
+                                    予算の設定
+                                </button>
                             </div>
-                            <div class="text-right">
-                                <span class="text-[1.1rem] font-black text-slate-800" id="budgetProgressText">0%</span>
+
+                            <div class="flex justify-between items-end mb-1">
+                                <div class="flex items-baseline gap-1.5">
+                                    <span class="text-[0.8rem] text-slate-400 font-bold" id="budgetRemainingLabel">残り:</span>
+                                    <span class="text-3xl font-extrabold text-primary" id="budgetRemainingText">¥0</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-[1.1rem] font-black text-slate-800" id="budgetProgressText">0%</span>
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="w-full h-[12px] bg-slate-100 rounded-full overflow-hidden mb-4" id="budgetProgressContainer">
-                            <div class="h-full bg-primary rounded-full transition-all duration-700 ease-out" id="budgetProgressBar"></div>
-                        </div>
-
-                        <div class="flex justify-end items-center text-[0.95rem]">
-                            <div class="flex items-center gap-1.5">
-                                <span class="text-slate-400" id="budgetRemainingLabel">残り:</span>
-                                <span class="font-bold text-primary text-[1.2rem]" id="budgetRemainingText">¥0</span>
+                            <div class="w-full h-[12px] bg-slate-100 rounded-full overflow-hidden mb-0" id="budgetProgressContainer">
+                                <div class="h-full bg-primary rounded-full transition-all duration-700 ease-out" id="budgetProgressBar"></div>
                             </div>
                         </div>
 
@@ -335,7 +346,7 @@
         <div class="modal-overlay"></div>
         <div class="modal-content calendar-modal">
             <div class="modal-header">
-                <h2>カレンダー</h2>
+                <h2 class="calendar-modal-title">カレンダー</h2>
                 <button class="modal-close" id="closeCalendarBtn" aria-label="閉じる">×</button>
             </div>
             <div class="modal-body">
@@ -362,6 +373,13 @@
                     </div>
                 </div>
             </div>
+            <!-- 明細とは独立した固定フッター（表示専用の合計） -->
+            <div
+                class="calendar-details-total calendar-details-total--fixed"
+                id="calendarDetailsTotalBar"
+                style="display: none;"
+                aria-hidden="true"
+            ></div>
         </div>
     </div>
 

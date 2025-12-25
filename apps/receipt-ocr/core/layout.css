@@ -3,8 +3,15 @@
     max-width: 480px;
     margin: 0 auto;
     background: var(--bg-color);
-    min-height: 100vh;
+    /* bodyが固定ヘッダー分(64px)だけpadding-topしているため、
+       ここを100vhにすると常に余計な縦スクロールが発生する */
+    min-height: calc(100vh - 64px);
     box-shadow: none;
+}
+
+/* エディタ表示時はヘッダーが消えるため、アプリ領域をビューポート全高に戻す */
+body.editor-active .app-container {
+    min-height: 100vh;
 }
 
 /* アプリコンテナ内のコンテナスタイル調整 */
@@ -34,6 +41,11 @@
     display: none;
     padding: 2rem 0;
     min-height: calc(100vh - 64px - var(--bottom-nav-height, 0px) - 4rem);
+}
+
+/* エディタ表示時はヘッダーが非表示なので 64px 分を引かない */
+body.editor-active #editor.screen {
+    min-height: calc(100vh - var(--bottom-nav-height, 0px) - 4rem);
 }
 
 .screen.active {

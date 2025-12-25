@@ -39,6 +39,11 @@ body {
     padding-top: 64px;
 }
 
+/* エディタ画面ではヘッダーを非表示にするため、ヘッダー分の余白も消す */
+body.editor-active {
+    padding-top: 0;
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;

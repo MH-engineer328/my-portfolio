@@ -1,7 +1,13 @@
 /* ダッシュボード：シングルカラムレイアウト */
 .dashboard-single {
-    padding-top: 0.5rem;
-    padding-bottom: 2rem;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* ヘッダー直下の余白をなくす（body側で固定ヘッダー分のpadding-top=64pxを確保済み） */
+#dashboard.screen {
+    padding-top: 1rem;
+    padding-bottom: 0; /* ホーム画面の下余白を詰める */
 }
 
 .dashboard-stack {
@@ -44,6 +50,40 @@
 .budget-card:hover {
     transform: translateY(-1px);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+/* 予算カード：横幅をスリムに（約1/3狭く） */
+#summaryCard {
+    width: min(100%, 320px);
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+/* 予算カード：折りたたみ時はコンパクトに（縦幅を詰める） */
+#summaryCard.is-collapsed {
+    padding-top: 14px !important;
+    padding-bottom: 14px !important;
+}
+
+#summaryCard .budget-card-header {
+    gap: 10px;
+}
+
+#summaryCard .budget-toggle-btn {
+    width: 36px !important;
+    height: 36px !important;
+}
+
+#summaryCard .budget-toggle-icon {
+    transition: transform 0.25s ease;
+}
+
+/* 折りたたみ: ▼ / 展開: ▲ */
+#summaryCard.is-collapsed .budget-toggle-icon {
+    transform: rotate(0deg);
+}
+#summaryCard:not(.is-collapsed) .budget-toggle-icon {
+    transform: rotate(180deg);
 }
 
 /* 進捗バーのアニメーション */
@@ -311,9 +351,16 @@
     justify-content: center;
     font-size: 1.1rem;
     flex-shrink: 0;
-    color: var(--icon-color, #2563eb);
-    background: var(--icon-bg, rgba(59, 130, 246, 0.12));
     border: 1px solid var(--icon-border, rgba(59, 130, 246, 0.2));
+}
+
+/* Tailwindのカテゴリ色（bg-*/text-*）が付いている場合はそちらを優先する */
+.timeline-icon:not([class*="text-"]) {
+    color: var(--icon-color, #2563eb);
+}
+
+.timeline-icon:not([class*="bg-"]) {
+    background: var(--icon-bg, rgba(59, 130, 246, 0.12));
 }
 
 .timeline-body {

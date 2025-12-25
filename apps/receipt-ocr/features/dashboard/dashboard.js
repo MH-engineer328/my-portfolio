@@ -741,6 +741,38 @@ ReceiptApp.prototype.initCollapsibleHistory = function() {
 };
 
 /**
+ * 予算カードの折りたたみ機能を初期化（常時=総予算、展開=詳細/設定）
+ */
+ReceiptApp.prototype.initCollapsibleBudgetCard = function() {
+    const card = document.getElementById('summaryCard');
+    const toggleBtn = document.getElementById('budgetCardToggleBtn');
+    const details = document.getElementById('budgetDetails');
+    if (!card || !toggleBtn || !details) return;
+
+    const applyState = (collapsed) => {
+        card.classList.toggle('is-collapsed', collapsed);
+        details.hidden = !!collapsed;
+        toggleBtn.setAttribute('aria-expanded', String(!collapsed));
+        toggleBtn.setAttribute('aria-label', collapsed ? '予算の詳細を開く' : '予算の詳細を閉じる');
+    };
+
+    // 初期状態：未保存なら「折りたたみ」をデフォルトにする
+    const saved = localStorage.getItem('budgetCardCollapsed');
+    const initialCollapsed = saved === null ? true : saved === 'true';
+    applyState(initialCollapsed);
+
+    toggleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const collapsed = card.classList.toggle('is-collapsed');
+        details.hidden = collapsed;
+        toggleBtn.setAttribute('aria-expanded', String(!collapsed));
+        toggleBtn.setAttribute('aria-label', collapsed ? '予算の詳細を開く' : '予算の詳細を閉じる');
+        localStorage.setItem('budgetCardCollapsed', String(collapsed));
+    });
+};
+
+/**
  * レシートカードを作成
  */
 ReceiptApp.prototype.createReceiptCard = function(receipt, showDeleteButton = false) {
@@ -1012,6 +1044,17 @@ ReceiptApp.prototype.deleteReceipt = function(receiptId, receiptDate) {
         this.showDateReceiptsModal(receiptDate);
     }
 
+    // カレンダーモーダルが開いている場合はカレンダーも更新
+    const calendarModal = document.getElementById('calendarModal');
+    if (calendarModal && calendarModal.style.display === 'flex') {
+        if (typeof this.renderCalendar === 'function') {
+            this.renderCalendar();
+        }
+        if (typeof this.renderCalendarSelectedDayList === 'function' && this.calendarSelectedDate) {
+            this.renderCalendarSelectedDayList(this.calendarSelectedDate);
+        }
+    }
+
     // ダッシュボードを更新
     this.updateDashboard();
 };
@@ -1132,10 +1175,14 @@ ReceiptApp.prototype.showCalendarModal = function() {
         return;
     }
 
-    // 現在の日付でカレンダーを初期化
-    this.calendarCurrentMonth = new Date();
-    // 初期表示は「今日」を選択して、当日分リストをすぐ見せる（導線改善）
-    this.calendarSelectedDate = this.formatDateForStorage(new Date());
+    const options = arguments.length > 0 ? arguments[0] : undefined;
+    // 指定があれば「月」「選択日」を復元。なければ通常通り「今日」起点。
+    const month = options?.month ? new Date(options.month) : new Date();
+    const selectedDate = options?.selectedDate || null;
+
+    this.calendarCurrentMonth = month;
+    // 初期表示は「指定日」→なければ「今日」（導線改善）
+    this.calendarSelectedDate = selectedDate || this.formatDateForStorage(new Date());
     this.renderCalendar();
     // 下段のリストを更新（renderCalendar内で選択状態は反映されるが、リストは別で描画）
     this.renderCalendarSelectedDayList(this.calendarSelectedDate);
@@ -1308,14 +1355,15 @@ ReceiptApp.prototype.createCalendarDay = function(dayNumber, isOtherMonth, amoun
         day.classList.add('selected');
     }
 
-    // 今日を青く強調
+    // 今日を強調（CSS側で青枠を表示）
     if (isToday) {
-        day.classList.add('!border-blue-600', '!border-2');
+        day.classList.add('is-today');
     }
     day.dataset.date = dateStr;
 
     const numberEl = document.createElement('div');
-    numberEl.className = `calendar-day-number ${isToday ? 'bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center' : ''}`;
+    // 今日の青丸強調は不要のため、通常のクラスのみ付与
+    numberEl.className = 'calendar-day-number';
     numberEl.textContent = dayNumber;
     day.appendChild(numberEl);
 
@@ -1362,6 +1410,7 @@ ReceiptApp.prototype.renderCalendarSelectedDayList = function(dateStr) {
     const details = document.getElementById('calendarDetails');
     const detailsDate = document.getElementById('calendarDetailsDate');
     const detailsList = document.getElementById('calendarDetailsList');
+    const totalBar = document.getElementById('calendarDetailsTotalBar');
 
     if (!details || !detailsDate || !detailsList) {
         console.error('Calendar details elements not found');
@@ -1372,6 +1421,11 @@ ReceiptApp.prototype.renderCalendarSelectedDayList = function(dateStr) {
     detailsList.classList.add('timeline-items');
 
     detailsList.innerHTML = '';
+    if (totalBar) {
+        totalBar.style.display = 'none';
+        totalBar.innerHTML = '';
+        totalBar.setAttribute('aria-hidden', 'true');
+    }
 
     // 未選択時のプレースホルダ
     if (!dateStr) {
@@ -1410,15 +1464,16 @@ ReceiptApp.prototype.renderCalendarSelectedDayList = function(dateStr) {
         detailsList.appendChild(this.createCalendarHybridTimelineItem(receipt));
     });
 
-    // 合計
+    // 合計（固定フッター：常に見える）
     const totalAmount = receipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
-    const totalEl = document.createElement('div');
-    totalEl.className = 'calendar-details-total';
-    totalEl.innerHTML = `
-        <span class="calendar-details-total-label">合計</span>
-        <span class="calendar-details-total-amount">¥${totalAmount.toLocaleString()}</span>
-    `;
-    detailsList.appendChild(totalEl);
+    if (totalBar) {
+        totalBar.innerHTML = `
+            <span class="calendar-details-total-label">合計金額</span>
+            <span class="calendar-details-total-amount">¥${totalAmount.toLocaleString()}</span>
+        `;
+        totalBar.style.display = 'flex';
+        totalBar.setAttribute('aria-hidden', 'false');
+    }
 
     details.style.display = 'block';
 };
@@ -1451,6 +1506,9 @@ ReceiptApp.prototype.createCalendarHybridTimelineItem = function(receipt) {
             <button class="receipt-edit-btn calendar-edit-btn" type="button" aria-label="編集" title="編集">
                 <span class="material-symbols-outlined" aria-hidden="true">edit</span>
             </button>
+            <button class="receipt-delete-btn calendar-delete-btn" type="button" aria-label="削除" title="削除">
+                <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+            </button>
         </div>
     `;
 
@@ -1458,7 +1516,21 @@ ReceiptApp.prototype.createCalendarHybridTimelineItem = function(receipt) {
     if (editBtn) {
         editBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.startEditReceipt(receipt.id);
+            const returnContext = {
+                screen: 'calendar',
+                // Dateは参照がミュータブルなのでコピーして保持
+                month: this.calendarCurrentMonth ? new Date(this.calendarCurrentMonth) : null,
+                selectedDate: this.calendarSelectedDate || null
+            };
+            this.startEditReceipt(receipt.id, returnContext);
+        });
+    }
+
+    const deleteBtn = item.querySelector('.calendar-delete-btn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.deleteReceipt(receipt.id, receipt.date);
         });
     }
 
@@ -1547,6 +1619,7 @@ ReceiptApp.prototype.renderCategoryBreakdown = function() {
             originalInit.call(this);
         }
         this.initBudgetBottomSheet();
+        this.initCollapsibleBudgetCard();
         this.initCollapsibleHistory();
     };
 })();

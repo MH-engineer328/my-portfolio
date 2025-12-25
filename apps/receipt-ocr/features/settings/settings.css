@@ -821,7 +821,7 @@
 
 /* ボトムナビゲーション */
 :root {
-    --bottom-nav-height: 64px;
+    --bottom-nav-height: 20px;
     --bottom-nav-bg: rgba(255, 255, 255, 0.94);
     --bottom-nav-shadow: 0 -8px 24px rgba(0, 0, 0, 0.08);
 }
@@ -832,7 +832,7 @@ html {
 
 @media (max-width: 768px) {
     :root {
-        --bottom-nav-height: 72px;
+        --bottom-nav-height: 20px;
     }
 }
 

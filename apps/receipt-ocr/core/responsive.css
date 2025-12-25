@@ -5,7 +5,8 @@
     }
 
     .calendar-grid {
-        gap: 0.25rem;
+        /* マス同士の間隔（スマホ） */
+        gap: 0.45rem;
     }
 
     .calendar-day {
@@ -24,6 +25,13 @@
     .fab {
         bottom: 1rem;
         right: 1rem;
+    }
+
+    /* モーダルがスマホで右/左に寄って見えないよう、最低限の左右余白を確保 */
+    .modal {
+        padding-left: 12px;
+        padding-right: 12px;
+        box-sizing: border-box;
     }
 
     .modal-content {
