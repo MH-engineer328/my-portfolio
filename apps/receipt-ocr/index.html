@@ -465,10 +465,10 @@
                         <!-- データ管理セクション -->
                         <section class="settings-panel" data-section="data">
                             <div class="settings-section">
-                                <h3>AI設定（Gemini BYOK）</h3>
+                                <h3>AI設定（OpenRouter / BYOK）</h3>
                                 <div class="form-group">
-                                    <label for="geminiApiKeyInput">Google Gemini APIキー</label>
-                                    <input type="password" id="geminiApiKeyInput" placeholder="AIza..." autocomplete="off" />
+                                    <label for="geminiApiKeyInput">OpenRouter APIキー</label>
+                                    <input type="password" id="geminiApiKeyInput" placeholder="sk-or-..." autocomplete="off" />
                                     <p class="form-hint">入力したキーはブラウザのLocalStorageにのみ保存されます。未入力の場合はデモモードとしてダミー結果を返します。</p>
                                     <div class="api-key-actions">
                                         <button class="btn btn-secondary btn-sm" type="button" id="clearApiKeyBtn">APIキーを削除</button>
@@ -534,6 +534,8 @@
     </div>
 
     <!-- スクリプト -->
+    <!-- ローカル専用設定（APIキー等）: このファイルはGit管理外。必要なら config.example.js をコピーして作成 -->
+    <script src="services/config.js"></script>
     <script src="services/storage.js"></script>
     <script src="services/parser.js"></script>
     <script src="services/category-classifier.js"></script>

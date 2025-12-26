@@ -1,0 +1,15 @@
+# ローカル開発用（参考）
+#
+# 注意:
+# - このリポジトリはバニラJS/HTMLでブラウザ実行のため、`.env` はそのままでは読み込まれません。
+# - ローカルでキーを外出ししたい場合は `apps/receipt-ocr/services/config.example.js` を
+#   `apps/receipt-ocr/services/config.js` にコピーして使ってください（Git管理外）。
+# - 公開運用（Vercel等）で安全にキーを隠したい場合は「サーバー側（Functions）+ 環境変数」を推奨します。
+#
+# --- 参考（将来: サーバー側を導入した場合に使う想定のキー） ---
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=google/gemini-flash-1.5
+OPENROUTER_SITE_URL=
+OPENROUTER_APP_TITLE=Smart Receipt
+
+

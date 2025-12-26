@@ -26,6 +26,9 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# Smart Receipt（ローカル専用設定: APIキー等）
+apps/receipt-ocr/services/config.js
+
 # ビルド成果物（必要に応じて）
 # dist/
 # build/
