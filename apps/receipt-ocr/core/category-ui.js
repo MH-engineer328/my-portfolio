@@ -1,7 +1,5 @@
 /**
  * カテゴリの見た目（ラベル/アイコン/色/予算）を統一するためのマップ。
- * - icon: Font Awesomeのクラス名（例: "fa-shirt"）
- * - color: Tailwindのクラス（背景/テキスト）
  *
  * 注意:
  * - このプロジェクトはビルド無し（Tailwind CDN）なので、ここで定義したクラスをJSで付与して描画します。
@@ -26,15 +24,26 @@ window.CATEGORY_MAP = {
     subscription: { label: 'サブスク', icon: 'fa-arrows-rotate', color: 'bg-indigo-100 text-indigo-700', budget: 3000 }
 };
 
+/**
+ * カテゴリのUIを取得
+ * @param {string} categoryId - カテゴリID
+ * @returns {object} - カテゴリのUI
+ * @memo: アイコンが一致したらそれを返し、なければotherを返す
+ */
 window.getCategoryUI = function(categoryId) {
     const map = window.CATEGORY_MAP || {};
     return map[categoryId] || map.other || { label: 'その他', icon: 'fa-ellipsis', color: 'bg-gray-500 text-gray-600', budget: 0 };
 };
 
+/**
+ * カテゴリのアイコンをHTMLで描画
+ * @param {string} categoryId - カテゴリID
+ * @returns {string} - HTML文字列
+ * @memo: ヘルパー関数を経由して、カテゴリのアイコンをHTMLで描画
+ */
 window.renderCategoryIconHtml = function(categoryId) {
     const ui = window.getCategoryUI(categoryId);
     const iconClass = ui?.icon || 'fa-ellipsis';
-    // Font Awesome 6前提（fa-solid）
     return `<i class="fa-solid ${iconClass}" aria-hidden="true"></i>`;
 };
 

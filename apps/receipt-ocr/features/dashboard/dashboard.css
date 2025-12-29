@@ -91,14 +91,14 @@
     box-shadow: 0 0 10px rgba(37, 99, 235, 0.2);
 }
 
-/* JSによって動的に付与されるクラスへの対応（予算超過時など） */
-.is-over #budgetProgressBar {
-    background-color: #ef4444; /* red-500 */
+/* 超過時（赤色）のCSS（ver.） */
+/* .is-over #budgetProgressBar {
+    background-color: #ef4444;
     box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
-}
-.is-over #budgetRemainingText {
+} */
+/* .is-over #budgetRemainingText {
     color: #ef4444;
-}
+} */
 
 /* 週間グラフカード（スタイル統一） */
 .weekly-card {

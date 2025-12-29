@@ -26,7 +26,6 @@ class ReceiptApp {
             captureBtn: document.getElementById('captureBtn'),
             receiptForm: document.getElementById('receiptForm'),
             cancelBtn: document.getElementById('cancelBtn'),
-            retakeBtn: document.getElementById('retakeBtn'),
             ocrLoading: document.getElementById('ocrLoading'),
             imagePreview: document.getElementById('imagePreview'),
             editorLeft: document.querySelector('.editor-left'),
@@ -69,7 +68,7 @@ class ReceiptApp {
             allReceiptsModal: document.getElementById('allReceiptsModal'),
             closeAllReceiptsBtn: document.getElementById('closeAllReceiptsBtn'),
             allReceiptsContainer: document.getElementById('allReceiptsContainer'),
-            
+
             // ヘッダー要素
             prevMonthBtn: document.getElementById('prevMonthBtn'),
             nextMonthBtn: document.getElementById('nextMonthBtn'),
@@ -229,11 +228,6 @@ class ReceiptApp {
             this.showDashboard();
         });
 
-        // 再撮影
-        this.elements.retakeBtn.addEventListener('click', () => {
-            this.elements.imageInput.click();
-        });
-
         // カテゴリ変更時の学習
         this.elements.category.addEventListener('change', () => {
             if (this.currentReceipt && this.currentReceipt.merchant) {
@@ -330,9 +324,6 @@ class ReceiptApp {
         const hideImageUI = isManual || (receipt && !receipt.image);
         if (this.elements.editorLeft) {
             this.elements.editorLeft.style.display = hideImageUI ? 'none' : '';
-        }
-        if (this.elements.retakeBtn) {
-            this.elements.retakeBtn.style.display = hideImageUI ? 'none' : '';
         }
 
         if (receipt) {
@@ -547,7 +538,7 @@ class ReceiptApp {
     updateMonthDisplay() {
         const year = this.currentMonth.getFullYear();
         const month = this.currentMonth.getMonth() + 1;
-        
+
         // ヘッダーの表示を更新
         if (this.elements.currentMonthDisplay) {
             this.elements.currentMonthDisplay.textContent = `${year}年${month}月`;

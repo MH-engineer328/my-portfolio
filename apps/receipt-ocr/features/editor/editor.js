@@ -1,8 +1,13 @@
 /**
- * エディタ/フォーム関連機能
+ * ReceiptApp Editor Feature
+ *
+ * レシート編集画面のUI操作とロジック
+ * - 画像アップロードとOCR処理の連携
+ * - フォーム入力・編集・バリデーション
+ * - レシートデータの保存・読み込み
+ * - ステータス表示（成功/エラー/確認）の管理
  */
 
-// ReceiptAppクラスのプロトタイプにメソッドを追加
 
 /**
  * 画像アップロード処理
@@ -99,6 +104,7 @@ ReceiptApp.prototype.updateFieldStatus = function(fieldName, confidence) {
 
 /**
  * レシートを保存
+ * @memo: 'receipt'はレシートのデータを保存するためのオブジェクト
  */
 ReceiptApp.prototype.saveReceipt = function() {
     const receipt = {
@@ -130,6 +136,7 @@ ReceiptApp.prototype.saveReceipt = function() {
 
 /**
  * フォームをリセット
+ * @memo: 前回のレシート内容をリセットするための関数
  */
 ReceiptApp.prototype.resetForm = function() {
     this.elements.receiptForm.reset();
@@ -152,7 +159,7 @@ ReceiptApp.prototype.resetForm = function() {
 ReceiptApp.prototype.loadReceiptToForm = function(receipt) {
     if (!receipt) return;
 
-    // 一旦クリアしてから値を反映
+    // 一旦クリアしてから値を反映する関数
     this.resetForm();
 
     this.elements.receiptDate.value = receipt.date || '';

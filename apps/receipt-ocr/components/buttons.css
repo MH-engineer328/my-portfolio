@@ -10,7 +10,8 @@
     transition: all var(--transition-base);
 }
 
-.btn-primary {
+/* botton(保存用) css ver. */
+/* .btn-primary {
     background: var(--primary-color);
     color: white;
 }
@@ -23,7 +24,7 @@
 
 .btn-primary:active {
     transform: translateY(0) scale(0.98);
-}
+} */
 
 .btn-secondary {
     background: var(--bg-light);
