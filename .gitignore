@@ -20,14 +20,15 @@ yarn-error.log*
 *.tmp
 *.temp
 .cache/
+.cursorrules
 
 # 環境変数ファイル
 .env
 .env.local
 .env.*.local
 
-# Smart Receipt（ローカル専用設定: APIキー等）
-apps/receipt-ocr/services/config.js
+# ローカル/開発用の設定（ルート直下: APIキー等を含む可能性があるため）
+config.js
 
 # ビルド成果物（必要に応じて）
 # dist/

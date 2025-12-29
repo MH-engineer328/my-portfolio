@@ -741,6 +741,77 @@ ReceiptApp.prototype.initCollapsibleHistory = function() {
 };
 
 /**
+ * 「全て閉じる」ボタンを初期化
+ * - 予算詳細（summaryCard）を折りたたみ
+ * - 最近のレシート（recentSection）を折りたたみ
+ * - 最近のレシート内のアコーディオン（timeline-group）を全て閉じる
+ * - 開いているモーダル/ボトムシートがあれば閉じる（存在する場合のみ）
+ */
+ReceiptApp.prototype.initCloseAllDashboardContentButton = function() {
+    const btn = document.getElementById('closeAllDashboardContentBtn');
+    if (!btn) return;
+
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // 1) 予算ボトムシート / 各種モーダルを閉じる（開いていれば）
+        if (typeof this.hideBudgetBottomSheet === 'function') {
+            this.hideBudgetBottomSheet();
+        }
+        if (typeof this.hideDateReceiptsModal === 'function') {
+            this.hideDateReceiptsModal();
+        }
+        if (typeof this.hideAllReceiptsModal === 'function') {
+            this.hideAllReceiptsModal();
+        }
+        if (typeof this.hideAddChoiceModal === 'function') {
+            this.hideAddChoiceModal();
+        }
+
+        // 2) 予算カードを折りたたむ
+        const summaryCard = document.getElementById('summaryCard');
+        const budgetDetails = document.getElementById('budgetDetails');
+        const budgetToggleBtn = document.getElementById('budgetCardToggleBtn');
+        if (summaryCard && budgetDetails && budgetToggleBtn) {
+            summaryCard.classList.add('is-collapsed');
+            budgetDetails.hidden = true;
+            budgetToggleBtn.setAttribute('aria-expanded', 'false');
+            budgetToggleBtn.setAttribute('aria-label', '予算の詳細を開く');
+            localStorage.setItem('budgetCardCollapsed', 'true');
+        }
+
+        // 3) 最近のレシートを折りたたむ
+        const recentSection = document.getElementById('recentSection');
+        if (recentSection) {
+            recentSection.classList.add('is-collapsed');
+            localStorage.setItem('recentSectionCollapsed', 'true');
+        }
+
+        // 4) 最近のレシート内のアコーディオンを全て閉じる
+        const receiptsContainer = document.getElementById('receiptsContainer');
+        if (receiptsContainer) {
+            const groups = receiptsContainer.querySelectorAll('.timeline-group.accordion');
+            groups.forEach((group) => {
+                group.classList.remove('is-expanded');
+                const content = group.querySelector('.accordion-content');
+                if (content) {
+                    content.style.maxHeight = '0px';
+                }
+            });
+        }
+
+        // 5) カテゴリ内訳の「さらに表示」を展開している場合は閉じる（あれば）
+        if (this.categoryBreakdownExpanded) {
+            this.categoryBreakdownExpanded = false;
+            if (typeof this.renderCategoryBreakdown === 'function') {
+                this.renderCategoryBreakdown();
+            }
+        }
+    });
+};
+
+/**
  * 予算カードの折りたたみ機能を初期化（常時=総予算、展開=詳細/設定）
  */
 ReceiptApp.prototype.initCollapsibleBudgetCard = function() {
@@ -1464,6 +1535,45 @@ ReceiptApp.prototype.renderCalendarSelectedDayList = function(dateStr) {
         detailsList.appendChild(this.createCalendarHybridTimelineItem(receipt));
     });
 
+    // 直前に保存したレシートを強調表示（「入った場所」が一目でわかるように）
+    try {
+        const justSaved = this.justSavedReceipt;
+        if (justSaved && justSaved.date === dateStr && justSaved.id) {
+            const target = detailsList.querySelector(`[data-receipt-id="${justSaved.id}"]`);
+            if (target) {
+                // 先頭に「追加/修正しました」バナーを差し込む
+                const savedReceipt = receipts.find(r => r && r.id === justSaved.id);
+                const label = justSaved.mode === 'updated' ? '修正しました' : '追加しました';
+                const banner = document.createElement('div');
+                banner.className = 'calendar-just-added-banner';
+                banner.innerHTML = `
+                    <div class="calendar-just-added-banner__text">
+                        ${label}：<b>${(savedReceipt?.merchant?.name || '不明な店舗')}</b>
+                        <span class="calendar-just-added-banner__amount">¥${(savedReceipt?.totalAmount || 0).toLocaleString()}</span>
+                    </div>
+                    <button class="calendar-just-added-banner__close" type="button" aria-label="通知を閉じる">×</button>
+                `;
+                const closeBtn = banner.querySelector('.calendar-just-added-banner__close');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        banner.remove();
+                    });
+                }
+                detailsList.insertBefore(banner, detailsList.firstChild);
+
+                // ハイライト＆視認位置へスクロール
+                target.classList.add('is-just-added');
+                target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }
+
+            // 一度見せたら消す（再表示でしつこくならないように）
+            this.justSavedReceipt = null;
+        }
+    } catch (e) {
+        console.warn('justSaved highlight failed', e);
+    }
+
     // 合計（固定フッター：常に見える）
     const totalAmount = receipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
     if (totalBar) {
@@ -1500,6 +1610,9 @@ ReceiptApp.prototype.createCalendarHybridTimelineItem = function(receipt) {
         <div class="timeline-icon ${colorClass}">${iconHtml}</div>
         <div class="timeline-body">
             <div class="timeline-title">${receipt.merchant?.name || '不明な店舗'}</div>
+            <div class="calendar-item-subtitle">
+                ${(receipt.category?.name || categorySetting?.name || '未分類')}${receipt.memo ? ` ・ ${String(receipt.memo).slice(0, 18)}${String(receipt.memo).length > 18 ? '…' : ''}` : ''}
+            </div>
         </div>
         <div class="timeline-right">
             <div class="timeline-amount">¥${(receipt.totalAmount || 0).toLocaleString()}</div>
@@ -1558,6 +1671,7 @@ ReceiptApp.prototype.renderCategoryBreakdown = function() {
     const receipts = this.storage.getReceiptsByMonth(displayDate.getFullYear(), displayDate.getMonth());
     const settings = this.storage.getSettings() || {};
     const categories = settings.categories || [];
+    const MAX_VISIBLE_ROWS = 4;
 
     // カテゴリごとの合計を計算
     const totals = {};
@@ -1582,10 +1696,17 @@ ReceiptApp.prototype.renderCategoryBreakdown = function() {
         return;
     }
 
+    // 表示状態（デフォルトは折りたたみ）
+    if (sortedCategories.length <= MAX_VISIBLE_ROWS) {
+        this.categoryBreakdownExpanded = false;
+    }
+    const isExpanded = !!this.categoryBreakdownExpanded;
+    const displayCategories = isExpanded ? sortedCategories : sortedCategories.slice(0, MAX_VISIBLE_ROWS);
+
     // 最大支出額を取得（ゲージの100%基準）
     const maxAmount = Math.max(...sortedCategories.map(c => c.amount));
 
-    sortedCategories.forEach(cat => {
+    displayCategories.forEach(cat => {
         const row = document.createElement('div');
         row.className = 'category-row flex flex-col gap-2';
         const progressWidth = (cat.amount / maxAmount) * 100;
@@ -1609,6 +1730,24 @@ ReceiptApp.prototype.renderCategoryBreakdown = function() {
         `;
         container.appendChild(row);
     });
+
+    // 4行を超える場合はトグルボタンを表示
+    if (sortedCategories.length > MAX_VISIBLE_ROWS) {
+        const remaining = sortedCategories.length - MAX_VISIBLE_ROWS;
+        const toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className =
+            'mt-2 w-full bg-slate-50 text-slate-700 text-[0.85rem] font-bold px-3 py-2 rounded-xl ' +
+            'hover:bg-slate-100 active:bg-slate-200 transition-all active:scale-[0.99]';
+        toggleBtn.textContent = isExpanded
+            ? '折りたたむ'
+            : `さらに表示（残り${remaining}件）`;
+        toggleBtn.addEventListener('click', () => {
+            this.categoryBreakdownExpanded = !isExpanded;
+            this.renderCategoryBreakdown();
+        });
+        container.appendChild(toggleBtn);
+    }
 };
 
 // 既存メソッドをラップしてボトムシート連携を追加
@@ -1621,6 +1760,7 @@ ReceiptApp.prototype.renderCategoryBreakdown = function() {
         this.initBudgetBottomSheet();
         this.initCollapsibleBudgetCard();
         this.initCollapsibleHistory();
+        this.initCloseAllDashboardContentButton();
     };
 })();
 

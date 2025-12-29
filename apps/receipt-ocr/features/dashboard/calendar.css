@@ -242,6 +242,45 @@
     margin: 0;
 }
 
+/* 保存直後の案内（追加しました） */
+.calendar-just-added-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 0.9rem;
+    margin: 0 0 0.75rem 0;
+    border-radius: 12px;
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.18);
+    color: #0f172a;
+}
+.calendar-just-added-banner__text {
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.2;
+    min-width: 0;
+}
+.calendar-just-added-banner__amount {
+    margin-left: 0.5rem;
+    font-weight: 900;
+    color: var(--primary, #3b82f6);
+    white-space: nowrap;
+}
+.calendar-just-added-banner__close {
+    border: none;
+    background: transparent;
+    color: rgba(15, 23, 42, 0.6);
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 10px;
+}
+.calendar-just-added-banner__close:hover {
+    background: rgba(15, 23, 42, 0.06);
+    color: rgba(15, 23, 42, 0.8);
+}
+
 .calendar-details-list {
     display: flex;
     flex-direction: column;
@@ -249,6 +288,30 @@
     overflow-y: auto;
     padding-bottom: 0.25rem;
     min-height: 0;
+}
+
+/* 追加直後のレシート行を強調 */
+.calendar-hybrid-item.is-just-added {
+    background: rgba(59, 130, 246, 0.08) !important;
+    border-radius: 14px;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+    animation: calendarJustAddedPulse 1.2s ease-out 1;
+}
+@keyframes calendarJustAddedPulse {
+    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.45); }
+    100% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+}
+
+/* サブ情報（カテゴリ/メモ） */
+.calendar-item-subtitle {
+    margin-top: 0.15rem;
+    font-size: 0.78rem;
+    color: rgba(100, 116, 139, 0.95); /* slate-500 */
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 /* 画面が小さい場合：カレンダーが大きくて下段が見切れるため、本文全体をスクロール可能にする（ダブルスクロール回避） */

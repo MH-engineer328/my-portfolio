@@ -107,6 +107,7 @@ ReceiptApp.prototype.updateFieldStatus = function(fieldName, confidence) {
  * @memo: 'receipt'はレシートのデータを保存するためのオブジェクト
  */
 ReceiptApp.prototype.saveReceipt = function() {
+    const isNew = !(this.currentReceipt && this.currentReceipt.id);
     const receipt = {
         ...(this.currentReceipt || {}),
         date: this.elements.receiptDate.value,
@@ -128,10 +129,37 @@ ReceiptApp.prototype.saveReceipt = function() {
     this.classifier.learn(receipt.merchant.name, receipt.category.id);
 
     // 保存
-    this.storage.saveReceipt(receipt);
+    const saved = this.storage.saveReceipt(receipt);
 
-    // ダッシュボードに戻る
+    // 直後に「どこに入ったか」を見せるためのフラグ（カレンダー側で強調表示に使う）
+    this.justSavedReceipt = saved?.id
+        ? { id: saved.id, date: saved.date, mode: isNew ? 'created' : 'updated' }
+        : null;
+
+    // 編集キャンセル時の戻り先（saveしたら一旦クリア）
+    const ctx = this.editReturnContext;
+    this.editReturnContext = null;
+
+    // ダッシュボードに戻る（モーダルの土台）
     this.showDashboard();
+
+    // 新規登録は「追加された実体」を見せるため、カレンダー（該当日）を自動で開く
+    // カレンダー経由の編集は、保存後もカレンダーへ戻してハイライトする
+    const shouldOpenCalendar =
+        (isNew && typeof this.showCalendarModal === 'function') ||
+        (!!(ctx && ctx.screen === 'calendar') && typeof this.showCalendarModal === 'function');
+
+    if (shouldOpenCalendar) {
+        const dateStr = saved?.date || this.elements.receiptDate.value;
+        const monthBase = (() => {
+            const base = (ctx && ctx.month) ? new Date(ctx.month) : (dateStr ? new Date(dateStr) : new Date());
+            return base;
+        })();
+        this.showCalendarModal({
+            month: monthBase,
+            selectedDate: dateStr || null
+        });
+    }
 };
 
 /**

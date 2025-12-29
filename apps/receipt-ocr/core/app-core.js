@@ -82,8 +82,15 @@ class ReceiptApp {
         };
 
         // 要素の存在確認
-        // 存在しなくても良いオプション要素（現状未使用）
-        const optionalElements = new Set(['dashboardAddBtn']);
+        // 存在しなくても良いオプション要素（画面構成により未配置なことがある）
+        // - captureBtnLarge: ダッシュボード上の大きな撮影ボタン（現行UIでは未配置）
+        // - openAllReceiptsBtn: 「もっと見る（全レシート）」導線（現行UIでは未配置）
+        // ! 要確認
+        const optionalElements = new Set([
+            'dashboardAddBtn',
+            'captureBtnLarge',
+            'openAllReceiptsBtn'
+        ]);
 
         const missingElements = Object.entries(this.elements)
             .filter(([key, value]) => !value && !optionalElements.has(key))
@@ -278,8 +285,9 @@ class ReceiptApp {
 
     /**
      * ダッシュボードを表示
+     * @param {string|null} highlightReceiptId - 保存直後に強調表示するレシートID
      */
-    showDashboard() {
+    showDashboard(highlightReceiptId = null) {
         if (!this.elements.dashboard || !this.elements.editor) {
             console.error('Dashboard or Editor element not found');
             return;
